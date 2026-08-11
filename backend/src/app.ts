@@ -9,9 +9,21 @@ import taskRoutes from "./routes/tasks";
 
 const app = express();
 
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (config.frontendOrigins.includes(origin)) return true;
+  // Any Vercel preview/prod URL can call the API (this app only).
+  if (config.isVercel && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
 app.use(
   cors({
-    origin: config.frontendOrigins,
+    origin(origin, callback) {
+      callback(null, isAllowedOrigin(origin));
+    },
   }),
 );
 
