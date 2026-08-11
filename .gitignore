@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Backend TypeScript build
+backend/dist/
+
+# Env files with real secrets — keep the *.example files
+.env
+.env.local
+.env.*.local
+
+# Local SQLite database
+backend/data/*.db
+backend/data/*.db-*
+
+# Logs and OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/

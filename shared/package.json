@@ -1,0 +1,7 @@
+{
+  "name": "@tmb/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared TypeScript types for the Task Management Board API and UI",
+  "types": "./types.ts"
+}
