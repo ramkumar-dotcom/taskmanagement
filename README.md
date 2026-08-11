@@ -7,17 +7,18 @@ A beginner-friendly **kanban board** starter.
 | Frontend | Next.js + React + Tailwind CSS + TypeScript | `frontend/` |
 | Backend | Node.js + Express + TypeScript | `backend/` |
 | Shared types | TypeScript contract used by both | `shared/types.ts` |
-| Database | SQLite (a SQL file on disk) | `backend/data/board.db` |
+| Database (local) | SQLite file | `backend/data/board.db` |
+| Database (live) | Neon Postgres | set `DATABASE_URL` |
 
-You only need **Node.js**. No Docker. No separate database server.
+You only need **Node.js** on your machine. Hosting is **Vercel + Neon** — see [HOSTING.md](./HOSTING.md).
 
 ---
 
 ## How the three pieces talk
 
 ```
-  Browser  →  Next.js (:3000)  →  Node API (:4000)  →  SQLite file
-  (you)       the board UI        Express routes        backend/data/board.db
+  Local:   Browser → Next.js (:3000) → Node API (:4000) → SQLite file
+  Live:    Browser → Vercel frontend → Vercel Express  → Neon Postgres
 ```
 
 1. You click **Add task** in the browser.
@@ -71,7 +72,7 @@ task-management-board/
 ├── shared/types.ts             # Board, Task, API shapes (both sides import this)
 ├── backend/
 │   ├── src/index.ts            # Express server (start here)
-│   ├── src/db.ts               # opens the SQLite file
+│   ├── src/db.ts               # SQLite locally, Neon Postgres when DATABASE_URL is set
 │   ├── src/config.ts           # reads .env
 │   ├── src/routes/             # /api/health  /api/board  /api/tasks
 │   ├── sql/schema.sql          # CREATE TABLE …
@@ -122,20 +123,16 @@ That deletes `backend/data/board.db` and recreates the sample cards.
 
 ---
 
-## Hosting later (do this when the app is ready)
+## Hosting (Vercel + Neon)
 
-You will host **two** things for now (the database file can travel with the API):
+Step-by-step: **[HOSTING.md](./HOSTING.md)**.
 
-1. **Backend** — deploy the `backend/` folder to [Railway](https://railway.app) or [Render](https://render.com).
-   - Start command: `npm start`
-   - Env vars: `PORT`, `FRONTEND_ORIGIN` (your Vercel URL)
-   - Note: a SQLite file on a host is wiped if the server restarts and the disk is ephemeral. When you need real persistence, we can switch this same SQL to a hosted Postgres (Neon / Supabase).
-2. **Frontend** — deploy the `frontend/` folder to [Vercel](https://vercel.com) (made for Next.js).
-   - Env var: `NEXT_PUBLIC_API_URL` = your Railway/Render API URL
+Short version:
 
-After hosting, update `FRONTEND_ORIGIN` on the API to your real Vercel address, or the browser will block requests (CORS).
-
-We are not deploying in this boilerplate step. `npm run dev` is enough for now.
+1. Create a Neon project and copy the **pooled** `DATABASE_URL`.
+2. Vercel project 1 — root `backend` — env: `DATABASE_URL`, `FRONTEND_ORIGIN`.
+3. Vercel project 2 — root `frontend` — env: `NEXT_PUBLIC_API_URL`.
+4. Put the real frontend URL into the API’s `FRONTEND_ORIGIN`, redeploy the API.
 
 ---
 

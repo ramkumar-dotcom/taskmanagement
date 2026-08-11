@@ -4,7 +4,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Task } from "@tmb/shared";
-import { query } from "../db";
+import { nowSql, query } from "../db";
 import type { SqlValue } from "../db";
 
 const router = Router();
@@ -31,7 +31,7 @@ function asTrimmedString(value: unknown): string | null {
 
 // POST /api/tasks
 // Body: { title, description?, columnId }
-router.post("/tasks", (req: Request<object, unknown, CreateTaskBody>, res) => {
+router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res) => {
   const title = asTrimmedString(req.body.title) ?? "";
   const description = asTrimmedString(req.body.description) ?? "";
   const columnId = Number(req.body.columnId);
@@ -46,20 +46,20 @@ router.post("/tasks", (req: Request<object, unknown, CreateTaskBody>, res) => {
   }
 
   try {
-    const column = query<{ id: number }>("SELECT id FROM columns WHERE id = $1", [columnId]);
+    const column = await query<{ id: number }>("SELECT id FROM columns WHERE id = $1", [columnId]);
     if (column.rows.length === 0) {
       badRequest(res, "column does not exist");
       return;
     }
 
-    const positionResult = query<{ next_position: number }>(
+    const positionResult = await query<{ next_position: number | string }>(
       "SELECT COALESCE(MAX(position), -1) + 1 AS next_position FROM tasks WHERE column_id = $1",
       [columnId],
     );
 
-    const nextPosition = positionResult.rows[0]?.next_position ?? 0;
+    const nextPosition = Number(positionResult.rows[0]?.next_position ?? 0);
 
-    const created = query<Task>(
+    const created = await query<Task>(
       `INSERT INTO tasks (column_id, title, description, position)
        VALUES ($1, $2, $3, $4)
        RETURNING id, column_id, title, description, position, created_at`,
@@ -83,7 +83,7 @@ router.post("/tasks", (req: Request<object, unknown, CreateTaskBody>, res) => {
 // Body can include title, description, and/or columnId (to move the card).
 router.patch(
   "/tasks/:id",
-  (req: Request<{ id: string }, unknown, UpdateTaskBody>, res) => {
+  async (req: Request<{ id: string }, unknown, UpdateTaskBody>, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
       badRequest(res, "invalid task id");
@@ -123,11 +123,11 @@ router.patch(
       return;
     }
 
-    updates.push("updated_at = datetime('now')");
+    updates.push(`updated_at = ${nowSql()}`);
     values.push(id);
 
     try {
-      const result = query<Task>(
+      const result = await query<Task>(
         `UPDATE tasks
          SET ${updates.join(", ")}
          WHERE id = $${values.length}
@@ -150,7 +150,7 @@ router.patch(
 );
 
 // DELETE /api/tasks/:id
-router.delete("/tasks/:id", (req, res) => {
+router.delete("/tasks/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     badRequest(res, "invalid task id");
@@ -158,7 +158,7 @@ router.delete("/tasks/:id", (req, res) => {
   }
 
   try {
-    const result = query<{ id: number }>("DELETE FROM tasks WHERE id = $1 RETURNING id", [id]);
+    const result = await query<{ id: number }>("DELETE FROM tasks WHERE id = $1 RETURNING id", [id]);
     if (result.rows.length === 0) {
       res.status(404).json({ error: "task not found" });
       return;

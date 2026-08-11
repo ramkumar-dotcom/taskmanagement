@@ -4,28 +4,39 @@
 // The API already creates tables the first time it starts.
 // Use this script only when you want a clean board again.
 //
-// Usage (from backend/):
 //   npm run db:setup          create tables + sample cards if missing
-//   npm run db:reset          delete the .db file, then create + seed again
+//   npm run db:reset          wipe, then create + seed again
+//
+// Local SQLite: deletes backend/data/board.db
+// Neon/Postgres: DROP TABLE ... then re-seed (needs DATABASE_URL)
 // =============================================================================
 
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
-
-const databasePath =
-  process.env.DATABASE_PATH ?? path.join(__dirname, "..", "data", "board.db");
-const reset = process.argv.includes("--reset");
+import { config } from "../src/config";
+import { ensureDatabase, resetDatabase } from "../src/db";
 
 async function main(): Promise<void> {
-  if (reset && fs.existsSync(databasePath)) {
-    fs.unlinkSync(databasePath);
-    console.log("Deleted", databasePath);
+  const reset = process.argv.includes("--reset");
+
+  if (reset) {
+    await resetDatabase();
+    console.log(
+      config.driver === "postgres"
+        ? "Reset Neon / Postgres tables."
+        : `Reset SQLite file: ${config.databasePath}`,
+    );
+    return;
   }
 
-  // Import after a possible delete so migrate() sees a fresh file.
-  await import("../src/db");
-  console.log("Database is ready:", databasePath);
+  await ensureDatabase();
+  console.log(
+    config.driver === "postgres"
+      ? "Postgres is ready (DATABASE_URL)."
+      : `Database is ready: ${config.databasePath}`,
+  );
 }
 
-void main();
+void main().catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+});

@@ -37,6 +37,9 @@ export function parseHealth(value: unknown): HealthResponse {
       ok: value.ok,
       service: value.service,
       database: value.database,
+      ...(value.driver === "sqlite" || value.driver === "postgres"
+        ? { driver: value.driver }
+        : {}),
       ...(typeof value.error === "string" ? { error: value.error } : {}),
     };
   }

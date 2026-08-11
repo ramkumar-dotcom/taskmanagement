@@ -8,21 +8,21 @@ import { query } from "../db";
 
 const router = Router();
 
-router.get("/board", (_req, res) => {
+router.get("/board", async (_req, res) => {
   try {
-    const boardResult = query<Board>(
+    const boardResult = await query<Board>(
       "SELECT id, name, created_at FROM boards ORDER BY id ASC LIMIT 1",
     );
 
     const board = boardResult.rows[0];
     if (!board) {
       res.status(404).json({
-        error: "No board found. Run: npm run db:setup  (inside backend/)",
+        error: "No board found. Check DATABASE_URL / run npm run db:setup",
       });
       return;
     }
 
-    const columnsResult = query<Column>(
+    const columnsResult = await query<Column>(
       `SELECT id, board_id, name, position
        FROM columns
        WHERE board_id = $1
@@ -30,7 +30,7 @@ router.get("/board", (_req, res) => {
       [board.id],
     );
 
-    const tasksResult = query<Task>(
+    const tasksResult = await query<Task>(
       `SELECT t.id, t.column_id, t.title, t.description, t.position, t.created_at
        FROM tasks t
        JOIN columns c ON c.id = t.column_id

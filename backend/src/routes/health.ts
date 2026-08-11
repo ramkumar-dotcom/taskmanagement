@@ -3,17 +3,19 @@
 
 import { Router } from "express";
 import type { HealthResponse } from "@tmb/shared";
+import { config } from "../config";
 import { describeError, ping } from "../db";
 
 const router = Router();
 
-router.get("/health", (_req, res) => {
+router.get("/health", async (_req, res) => {
   try {
-    ping();
+    await ping();
     const body: HealthResponse = {
       ok: true,
       service: "task-management-board-api",
       database: "connected",
+      driver: config.driver,
     };
     res.json(body);
   } catch (err) {
@@ -21,6 +23,7 @@ router.get("/health", (_req, res) => {
       ok: false,
       service: "task-management-board-api",
       database: "disconnected",
+      driver: config.driver,
       error: describeError(err),
     };
     res.status(503).json(body);

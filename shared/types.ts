@@ -35,11 +35,13 @@ export interface BoardWithColumns extends Board {
 }
 
 export type DatabaseStatus = "connected" | "disconnected";
+export type DatabaseDriver = "sqlite" | "postgres";
 
 export interface HealthResponse {
   ok: boolean;
   service: string;
   database: DatabaseStatus;
+  driver?: DatabaseDriver;
   error?: string;
 }
 

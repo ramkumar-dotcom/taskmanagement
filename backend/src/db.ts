@@ -1,21 +1,24 @@
 // =============================================================================
 // DATABASE CONNECTION
 //
-// What is happening here?
-// 1. SQLite is a SQL database stored as one file (backend/data/board.db).
-// 2. Node 22+ ships `node:sqlite`, so we do not install Postgres or Docker.
-// 3. `query()` is the only function the rest of the app should call.
+// Local (no DATABASE_URL): SQLite file at backend/data/board.db
+// Production (Neon):       Postgres via DATABASE_URL
 //
-// SQL is just text. Example:
-//   query<Task>("SELECT * FROM tasks WHERE id = $1", [42])
-// $1 is a placeholder. Never glue user input into SQL with + or template
-// strings — that is how SQL injection happens. Always use $1, $2, ...
+// Routes always call query() with $1, $2 placeholders. This file adapts
+// that to whichever database is configured.
 // =============================================================================
 
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { Pool } from "pg";
 import { config } from "./config";
+import {
+  postgresSchema,
+  postgresSequenceFix,
+  seedSql,
+  sqliteSchema,
+} from "./sql-scripts";
 
 export type SqlValue = null | number | string | bigint;
 
@@ -23,17 +26,56 @@ export interface QueryResult<T> {
   rows: T[];
 }
 
-const dataDir = path.dirname(config.databasePath);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+let sqlite: DatabaseSync | undefined;
+let postgres: Pool | undefined;
+let migratePromise: Promise<void> | undefined;
+
+function needsSsl(url: string): boolean {
+  return url.includes("neon.tech") || url.includes("sslmode=require");
 }
 
-const connection = new DatabaseSync(config.databasePath);
-connection.exec("PRAGMA foreign_keys = ON");
+function getSqlite(): DatabaseSync {
+  if (!sqlite) {
+    const dataDir = path.dirname(config.databasePath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    sqlite = new DatabaseSync(config.databasePath);
+    sqlite.exec("PRAGMA foreign_keys = ON");
+  }
+  return sqlite;
+}
+
+function getPostgres(): Pool {
+  if (!postgres) {
+    if (!config.databaseUrl) {
+      throw new Error("DATABASE_URL is missing");
+    }
+    postgres = new Pool({
+      connectionString: config.databaseUrl,
+      max: 1,
+      ssl: needsSsl(config.databaseUrl) ? { rejectUnauthorized: false } : undefined,
+    });
+  }
+  return postgres;
+}
 
 function toSqlite(text: string): string {
-  // Routes use $1, $2 (common SQL style). SQLite wants ? ? instead.
   return text.replace(/\$\d+/g, "?");
+}
+
+function normalizeRow<T>(row: Record<string, unknown>): T {
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (value instanceof Date) {
+      next[key] = value.toISOString();
+    } else if (typeof value === "bigint") {
+      next[key] = Number(value);
+    } else {
+      next[key] = value;
+    }
+  }
+  return next as T;
 }
 
 export function describeError(err: unknown): string {
@@ -59,38 +101,84 @@ export function describeError(err: unknown): string {
   return "unknown database error";
 }
 
-export function query<T>(text: string, params: SqlValue[] = []): QueryResult<T> {
-  const sql = toSqlite(text);
+export async function query<T>(
+  text: string,
+  params: SqlValue[] = [],
+): Promise<QueryResult<T>> {
   const start = Date.now();
-  const statement = connection.prepare(sql);
-  const returnsRows = /^\s*SELECT/i.test(sql) || /RETURNING/i.test(sql);
-  const rows = returnsRows ? (statement.all(...params) as T[]) : [];
-  if (!returnsRows) {
-    statement.run(...params);
+  let rows: T[];
+
+  if (config.driver === "postgres") {
+    const result = await getPostgres().query<Record<string, unknown>>(text, params);
+    rows = result.rows.map((row) => normalizeRow<T>(row));
+  } else {
+    const sql = toSqlite(text);
+    const statement = getSqlite().prepare(sql);
+    const returnsRows = /^\s*SELECT/i.test(sql) || /RETURNING/i.test(sql);
+    if (returnsRows) {
+      rows = (statement.all(...params) as Record<string, unknown>[]).map((row) =>
+        normalizeRow<T>(row),
+      );
+    } else {
+      statement.run(...params);
+      rows = [];
+    }
   }
+
   const ms = Date.now() - start;
   const preview = text.split("\n")[0] ?? text;
-  console.log(`SQL ${ms}ms · ${preview.slice(0, 80)}`);
+  console.log(`SQL ${config.driver} ${ms}ms · ${preview.slice(0, 80)}`);
   return { rows };
 }
 
-export function ping(): void {
-  query("SELECT 1");
+export async function ping(): Promise<void> {
+  await query("SELECT 1");
 }
 
-function applySqlFile(filename: string): void {
-  const filePath = path.join(__dirname, "..", "sql", filename);
-  connection.exec(fs.readFileSync(filePath, "utf8"));
+export function nowSql(): string {
+  return config.driver === "postgres" ? "NOW()" : "datetime('now')";
 }
 
-export function migrate(): void {
-  applySqlFile("schema.sql");
-  const count = query<{ n: number | bigint }>("SELECT COUNT(*) AS n FROM boards");
-  const total = Number(count.rows[0]?.n ?? 0);
-  if (total === 0) {
-    applySqlFile("seed.sql");
+export async function resetDatabase(): Promise<void> {
+  if (config.driver === "postgres") {
+    await getPostgres().query("DROP TABLE IF EXISTS tasks, columns, boards CASCADE");
+  } else if (sqlite) {
+    sqlite.close();
+    sqlite = undefined;
+  }
+
+  if (config.driver === "sqlite" && fs.existsSync(config.databasePath)) {
+    fs.unlinkSync(config.databasePath);
+  }
+
+  migratePromise = undefined;
+  await ensureDatabase();
+}
+
+async function migrate(): Promise<void> {
+  if (config.driver === "postgres") {
+    const pool = getPostgres();
+    await pool.query(postgresSchema);
+    const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
+    if (Number(count.rows[0]?.n ?? 0) === 0) {
+      await pool.query(seedSql);
+      await pool.query(postgresSequenceFix);
+      console.log("Seeded sample board into Neon / Postgres");
+    }
+    return;
+  }
+
+  getSqlite().exec(sqliteSchema);
+  const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
+  if (Number(count.rows[0]?.n ?? 0) === 0) {
+    getSqlite().exec(seedSql);
     console.log("Seeded sample board into", config.databasePath);
   }
 }
 
-migrate();
+export function ensureDatabase(): Promise<void> {
+  if (!migratePromise) {
+    migratePromise = migrate();
+  }
+  return migratePromise;
+}

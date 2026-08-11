@@ -2,7 +2,7 @@
   "name": "task-management-board-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Node.js + SQLite API for the Task Management Board",
+  "description": "Node.js API for the Task Management Board (SQLite local, Neon Postgres in production)",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -19,12 +19,14 @@
     "@tmb/shared": "file:../shared",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pg": "^8.23.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
+    "@types/pg": "^8.21.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
