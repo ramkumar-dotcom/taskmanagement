@@ -6,6 +6,12 @@
 
 import path from "node:path";
 
+function dataFilePath(): string {
+  if (process.env.DATABASE_PATH) return process.env.DATABASE_PATH;
+  // Do not use __dirname — Vercel bundles ESM and __dirname is undefined (crash).
+  return path.join(process.cwd(), "data", "board.db");
+}
+
 export type DatabaseDriver = "sqlite" | "postgres";
 
 export interface Config {
@@ -38,9 +44,7 @@ export const config: Config = {
   port: Number(process.env.PORT) || 4000,
   driver: detectDriver(databaseUrl),
   databaseUrl,
-  databasePath:
-    process.env.DATABASE_PATH ??
-    path.join(__dirname, "..", "data", "board.db"),
+  databasePath: dataFilePath(),
   frontendOrigins: parseOrigins(
     process.env.FRONTEND_ORIGIN ?? "http://localhost:3000",
   ),

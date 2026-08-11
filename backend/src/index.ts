@@ -11,6 +11,8 @@ import "dotenv/config";
 import app from "./app";
 import { config } from "./config";
 
+export default app;
+
 if (!config.isVercel) {
   app.listen(config.port, () => {
     console.log("");
@@ -26,5 +28,3 @@ if (!config.isVercel) {
     console.log("");
   });
 }
-
-export default app;

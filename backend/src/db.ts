@@ -7,8 +7,6 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { neonConfig, Pool as NeonPool } from "@neondatabase/serverless";
-import { Pool as PgPool } from "pg";
 import { config } from "./config";
 import {
   postgresSchema,
@@ -65,18 +63,19 @@ function getSqlite(): SqliteConnection {
   return sqlite;
 }
 
-function getPostgres(): SqlClient {
+async function getPostgres(): Promise<SqlClient> {
   if (!postgres) {
     if (!config.databaseUrl) {
       throw new Error("DATABASE_URL is missing");
     }
 
     if (isNeonUrl(config.databaseUrl)) {
-      // HTTP instead of a raw TCP socket — required on Vercel Functions.
+      const { neonConfig, Pool } = await import("@neondatabase/serverless");
       neonConfig.poolQueryViaFetch = true;
-      postgres = new NeonPool({ connectionString: config.databaseUrl });
+      postgres = new Pool({ connectionString: config.databaseUrl });
     } else {
-      postgres = new PgPool({
+      const { Pool } = await import("pg");
+      postgres = new Pool({
         connectionString: config.databaseUrl,
         max: 1,
         connectionTimeoutMillis: 5000,
@@ -138,7 +137,7 @@ export async function query<T>(
   let rows: T[];
 
   if (config.driver === "postgres") {
-    const result = await getPostgres().query(text, params);
+    const result = await (await getPostgres()).query(text, params);
     rows = result.rows.map((row) => normalizeRow<T>(row));
   } else {
     const sql = toSqlite(text);
@@ -170,7 +169,7 @@ export function nowSql(): string {
 
 export async function resetDatabase(): Promise<void> {
   if (config.driver === "postgres") {
-    await getPostgres().query("DROP TABLE IF EXISTS tasks, columns, boards CASCADE");
+    await (await getPostgres()).query("DROP TABLE IF EXISTS tasks, columns, boards CASCADE");
   } else if (sqlite) {
     sqlite.close();
     sqlite = undefined;
@@ -186,7 +185,7 @@ export async function resetDatabase(): Promise<void> {
 
 async function migrate(): Promise<void> {
   if (config.driver === "postgres") {
-    const client = getPostgres();
+    const client = await getPostgres();
     await client.query(postgresSchema);
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {

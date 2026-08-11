@@ -13,7 +13,7 @@
     "db:reset": "tsx scripts/setup-db.ts --reset"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
