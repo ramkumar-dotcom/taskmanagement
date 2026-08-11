@@ -32,7 +32,9 @@ Keep this private. You will paste it only into Vercel.
 3. Settings on this first project:
    - **Project Name:** `taskmanagement-api`
    - **Root Directory:** `backend`  (click Edit, then type `backend`)
-   - Framework: Vercel should detect Express
+   - Framework: **Express** (not Next.js, not Other/static)
+   - **Build Command:** leave empty (do not use `npm run build`)
+   - **Output Directory:** leave empty (do not set `public`)
 4. **Environment Variables** (Production):
 
    | Name | Value |
@@ -89,7 +91,7 @@ Add a card, refresh — it should still be there (it is in Neon).
 
 | Symptom | Fix |
 | --- | --- |
-| `/api/health` spins or `FUNCTION_INVOCATION_FAILED` | Redeploy after the latest `main` push. Then confirm `DATABASE_URL` is the Neon **pooled** URI. |
+| Build error: `No Output Directory named "public"` | The API is not a static site. In the **API** project: Framework = Express, Build Command empty, Output Directory empty. Redeploy `main`. |
 | Health `database: disconnected` | Wrong password, or you used the non-pooled URL. Copy again from Neon. |
 | Frontend “Cannot reach the API” | `NEXT_PUBLIC_API_URL` is wrong. It is baked in at **build** time — change it, then Redeploy the frontend. |
 | Browser console CORS error | `FRONTEND_ORIGIN` on the API does not exactly match the frontend origin. No trailing slash. Redeploy the API. |
