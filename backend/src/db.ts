@@ -2,16 +2,13 @@
 // DATABASE CONNECTION
 //
 // Local (no DATABASE_URL): SQLite file at backend/data/board.db
-// Production (Neon):       Postgres via DATABASE_URL
-//
-// Routes always call query() with $1, $2 placeholders. This file adapts
-// that to whichever database is configured.
+// Production (Neon on Vercel): HTTP driver — TCP `pg` hangs in serverless.
 // =============================================================================
 
 import fs from "node:fs";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { Pool } from "pg";
+import { neonConfig, Pool as NeonPool } from "@neondatabase/serverless";
+import { Pool as PgPool } from "pg";
 import { config } from "./config";
 import {
   postgresSchema,
@@ -26,16 +23,38 @@ export interface QueryResult<T> {
   rows: T[];
 }
 
-let sqlite: DatabaseSync | undefined;
-let postgres: Pool | undefined;
+type SqlClient = {
+  query: (
+    text: string,
+    params?: SqlValue[],
+  ) => Promise<{ rows: Record<string, unknown>[] }>;
+};
+
+type SqliteConnection = {
+  exec: (sql: string) => void;
+  prepare: (sql: string) => {
+    all: (...params: SqlValue[]) => unknown[];
+    run: (...params: SqlValue[]) => void;
+  };
+  close: () => void;
+};
+
+let sqlite: SqliteConnection | undefined;
+let postgres: SqlClient | undefined;
 let migratePromise: Promise<void> | undefined;
 
-function needsSsl(url: string): boolean {
-  return url.includes("neon.tech") || url.includes("sslmode=require");
+function isNeonUrl(url: string): boolean {
+  return url.includes("neon.tech") || url.includes("neon.local");
 }
 
-function getSqlite(): DatabaseSync {
+function getSqlite(): SqliteConnection {
+  if (config.isVercel) {
+    throw new Error("SQLite cannot run on Vercel. Set DATABASE_URL to your Neon pooled URI.");
+  }
   if (!sqlite) {
+    // Loaded only on a real machine. Importing node:sqlite on Vercel crashes the function.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DatabaseSync } = require("node:sqlite") as typeof import("node:sqlite");
     const dataDir = path.dirname(config.databasePath);
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
@@ -46,16 +65,26 @@ function getSqlite(): DatabaseSync {
   return sqlite;
 }
 
-function getPostgres(): Pool {
+function getPostgres(): SqlClient {
   if (!postgres) {
     if (!config.databaseUrl) {
       throw new Error("DATABASE_URL is missing");
     }
-    postgres = new Pool({
-      connectionString: config.databaseUrl,
-      max: 1,
-      ssl: needsSsl(config.databaseUrl) ? { rejectUnauthorized: false } : undefined,
-    });
+
+    if (isNeonUrl(config.databaseUrl)) {
+      // HTTP instead of a raw TCP socket — required on Vercel Functions.
+      neonConfig.poolQueryViaFetch = true;
+      postgres = new NeonPool({ connectionString: config.databaseUrl });
+    } else {
+      postgres = new PgPool({
+        connectionString: config.databaseUrl,
+        max: 1,
+        connectionTimeoutMillis: 5000,
+        ssl: config.databaseUrl.includes("sslmode=require")
+          ? { rejectUnauthorized: false }
+          : undefined,
+      });
+    }
   }
   return postgres;
 }
@@ -109,7 +138,7 @@ export async function query<T>(
   let rows: T[];
 
   if (config.driver === "postgres") {
-    const result = await getPostgres().query<Record<string, unknown>>(text, params);
+    const result = await getPostgres().query(text, params);
     rows = result.rows.map((row) => normalizeRow<T>(row));
   } else {
     const sql = toSqlite(text);
@@ -157,12 +186,12 @@ export async function resetDatabase(): Promise<void> {
 
 async function migrate(): Promise<void> {
   if (config.driver === "postgres") {
-    const pool = getPostgres();
-    await pool.query(postgresSchema);
+    const client = getPostgres();
+    await client.query(postgresSchema);
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {
-      await pool.query(seedSql);
-      await pool.query(postgresSequenceFix);
+      await client.query(seedSql);
+      await client.query(postgresSequenceFix);
       console.log("Seeded sample board into Neon / Postgres");
     }
     return;

@@ -9,6 +9,19 @@ import { describeError, ping } from "../db";
 const router = Router();
 
 router.get("/health", async (_req, res) => {
+  if (config.isVercel && config.driver !== "postgres") {
+    const body: HealthResponse = {
+      ok: false,
+      service: "task-management-board-api",
+      database: "disconnected",
+      driver: config.driver,
+      error:
+        "DATABASE_URL is missing on Vercel. Add the Neon pooled connection string, then Redeploy.",
+    };
+    res.status(503).json(body);
+    return;
+  }
+
   try {
     await ping();
     const body: HealthResponse = {

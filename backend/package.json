@@ -16,6 +16,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@tmb/shared": "file:../shared",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",

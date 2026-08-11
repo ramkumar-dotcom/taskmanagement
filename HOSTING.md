@@ -89,7 +89,7 @@ Add a card, refresh — it should still be there (it is in Neon).
 
 | Symptom | Fix |
 | --- | --- |
-| Health `driver: sqlite` on Vercel | `DATABASE_URL` is missing or not a `postgres://` URL. Use the Neon **pooled** string. |
+| `/api/health` spins or `FUNCTION_INVOCATION_FAILED` | Redeploy after the latest `main` push. Then confirm `DATABASE_URL` is the Neon **pooled** URI. |
 | Health `database: disconnected` | Wrong password, or you used the non-pooled URL. Copy again from Neon. |
 | Frontend “Cannot reach the API” | `NEXT_PUBLIC_API_URL` is wrong. It is baked in at **build** time — change it, then Redeploy the frontend. |
 | Browser console CORS error | `FRONTEND_ORIGIN` on the API does not exactly match the frontend origin. No trailing slash. Redeploy the API. |
