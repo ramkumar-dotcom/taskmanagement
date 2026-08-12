@@ -15,7 +15,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   }, [router]);
 
   if (!signedIn) {
-    return <p className="px-4 py-16 text-center text-sm text-stone-500">Taking you home…</p>;
+    return <p className="px-4 py-16 text-center text-sm text-stone-500 dark:text-stone-400">Taking you home…</p>;
   }
 
   return children;

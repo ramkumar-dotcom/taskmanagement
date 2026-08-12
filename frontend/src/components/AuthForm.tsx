@@ -54,60 +54,60 @@ export default function AuthForm({ mode }: AuthFormProps) {
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
       {isRegister ? (
         <label className="block text-sm">
-          <span className="text-stone-600">Name</span>
+          <span className="text-stone-600 dark:text-stone-300">Name</span>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+            className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             autoComplete="name"
           />
         </label>
       ) : null}
 
       <label className="block text-sm">
-        <span className="text-stone-600">Email</span>
+        <span className="text-stone-600 dark:text-stone-300">Email</span>
         <input
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+          className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
           autoComplete="email"
         />
       </label>
 
       <label className="block text-sm">
-        <span className="text-stone-600">Password</span>
+        <span className="text-stone-600 dark:text-stone-300">Password</span>
         <input
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+          className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
           autoComplete={isRegister ? "new-password" : "current-password"}
         />
       </label>
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="text-sm text-red-700 dark:text-red-400">{error}</p> : null}
 
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-xl bg-teal-800 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:bg-stone-300"
+        className="w-full rounded-xl bg-teal-800 py-2.5 text-sm font-medium text-white hover:bg-teal-900 disabled:bg-stone-300 dark:disabled:bg-stone-700"
       >
         {busy ? "Please wait…" : isRegister ? "Create account" : "Log in"}
       </button>
 
-      <p className="text-center text-sm text-stone-500">
+      <p className="text-center text-sm text-stone-500 dark:text-stone-400">
         {isRegister ? (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-teal-800 hover:underline">
+            <Link href="/login" className="font-medium text-teal-800 hover:underline dark:text-teal-300">
               Login
             </Link>
           </>
         ) : (
           <>
             New here?{" "}
-            <Link href="/register" className="font-medium text-teal-800 hover:underline">
+            <Link href="/register" className="font-medium text-teal-800 hover:underline dark:text-teal-300">
               Register
             </Link>
           </>

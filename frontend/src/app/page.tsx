@@ -30,15 +30,15 @@ export default function LandingPage() {
 
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:grid-cols-2 md:py-24">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800 dark:text-teal-300">
             Kanban for people who ship
           </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 md:text-5xl">
             Stop losing tasks.
             <br />
             Watch them move.
           </h1>
-          <p className="mt-4 max-w-md text-base leading-7 text-stone-600">
+          <p className="mt-4 max-w-md text-base leading-7 text-stone-600 dark:text-stone-300">
             Task Management Board is a focused kanban. Add a card, move it, finish it.
             Built for small teams who don&apos;t need a 40-page tool.
           </p>
@@ -51,15 +51,15 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/login"
-              className="rounded-xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-50"
+              className="rounded-xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:hover:bg-stone-800"
             >
               Login
             </Link>
           </div>
-          <p className="mt-4 text-xs text-stone-500">No credit card. Open the board in seconds.</p>
+          <p className="mt-4 text-xs text-stone-500 dark:text-stone-400">No credit card. Open the board in seconds.</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 rounded-3xl border border-stone-200 bg-stone-100/80 p-4 shadow-sm">
+        <div className="grid grid-cols-3 gap-3 rounded-3xl border border-stone-200 bg-stone-100/80 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900/80">
           {[
             { name: "To Do", tint: "border-t-stone-400" },
             { name: "In Progress", tint: "border-t-amber-400" },
@@ -67,12 +67,12 @@ export default function LandingPage() {
           ].map((col) => (
             <div
               key={col.name}
-              className={`rounded-2xl border border-stone-200 border-t-4 bg-stone-50 p-3 ${col.tint}`}
+              className={`rounded-2xl border border-stone-200 border-t-4 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-950 ${col.tint}`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                 {col.name}
               </p>
-              <div className="mt-6 rounded-lg border border-dashed border-stone-200 bg-white/60 px-2 py-6 text-center text-[11px] text-stone-400">
+              <div className="mt-6 rounded-lg border border-dashed border-stone-200 bg-white/60 px-2 py-6 text-center text-[11px] text-stone-400 dark:border-stone-700 dark:bg-stone-900/60 dark:text-stone-500">
                 Empty
               </div>
             </div>
@@ -80,19 +80,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="features" className="border-y border-stone-200 bg-white">
+      <section id="features" className="border-y border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-stone-900">
+          <h2 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
             Everything you need. Nothing you don&apos;t.
           </h2>
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {features.map((feature) => (
               <article
                 key={feature.title}
-                className="rounded-2xl border border-stone-200 bg-[#f7f4ef] p-5"
+                className="rounded-2xl border border-stone-200 bg-[#f7f4ef] p-5 dark:border-stone-700 dark:bg-stone-900"
               >
-                <h3 className="text-sm font-semibold text-stone-900">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-stone-600">{feature.body}</p>
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-stone-600 dark:text-stone-300">{feature.body}</p>
               </article>
             ))}
           </div>
@@ -100,13 +100,13 @@ export default function LandingPage() {
       </section>
 
       <section id="how-it-works" className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-2xl font-semibold tracking-tight text-stone-900">How it works</h2>
+        <h2 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">How it works</h2>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {steps.map((step) => (
-            <div key={step.n} className="rounded-2xl border border-stone-200 bg-white p-5">
-              <p className="font-mono text-xs text-teal-800">{step.n}</p>
-              <h3 className="mt-2 text-sm font-semibold text-stone-900">{step.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-stone-600">{step.body}</p>
+            <div key={step.n} className="rounded-2xl border border-stone-200 bg-white p-5 dark:border-stone-700 dark:bg-stone-900">
+              <p className="font-mono text-xs text-teal-800 dark:text-teal-300">{step.n}</p>
+              <h3 className="mt-2 text-sm font-semibold text-stone-900 dark:text-stone-50">{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-stone-600 dark:text-stone-300">{step.body}</p>
             </div>
           ))}
         </div>

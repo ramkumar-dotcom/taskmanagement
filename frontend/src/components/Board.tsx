@@ -192,13 +192,13 @@ export default function Board({ initial }: BoardProps) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800 dark:text-teal-300">
           Workspace
         </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900">
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
           Task Management Board
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-500">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-500 dark:text-stone-400">
           Drag any card to another column or to a new spot in the list.
         </p>
       </header>
@@ -238,7 +238,7 @@ export default function Board({ initial }: BoardProps) {
       </div>
 
       {error ? (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
           {error}
         </div>
       ) : null}
@@ -272,7 +272,7 @@ export default function Board({ initial }: BoardProps) {
           </DragOverlay>
         </DndContext>
       ) : !error ? (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           {boards.length === 0 ? "Create a board to get started." : "Loading board…"}
         </p>
       ) : null}

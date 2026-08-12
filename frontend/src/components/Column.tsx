@@ -57,15 +57,15 @@ export default function Column({
 
   return (
     <section
-      className={`flex min-h-[28rem] flex-col rounded-2xl border border-stone-200 border-t-4 bg-stone-100/80 p-4 ${accent} ${
-        isOver ? "ring-2 ring-teal-700/20" : ""
+      className={`flex min-h-[28rem] flex-col rounded-2xl border border-stone-200 border-t-4 bg-stone-100/80 p-4 dark:border-stone-700 dark:bg-stone-900/80 ${accent} ${
+        isOver ? "ring-2 ring-teal-500/30" : ""
       }`}
     >
       <header className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold tracking-wide text-stone-800">
+        <h2 className="text-sm font-semibold tracking-wide text-stone-800 dark:text-stone-100">
           {column.name}
         </h2>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs text-stone-500">
+        <span className="rounded-full bg-white px-2 py-0.5 text-xs text-stone-500 dark:bg-stone-800 dark:text-stone-400">
           {filterActive ? `${visibleTasks.length}/${column.tasks.length}` : column.tasks.length}
         </span>
       </header>
@@ -86,12 +86,12 @@ export default function Column({
           ))}
         </SortableContext>
         {column.tasks.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400">
+          <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400 dark:border-stone-600 dark:text-stone-500">
             Drop a card here
           </p>
         ) : null}
         {column.tasks.length > 0 && visibleTasks.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400">
+          <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400 dark:border-stone-600 dark:text-stone-500">
             No tasks in this date range
           </p>
         ) : null}

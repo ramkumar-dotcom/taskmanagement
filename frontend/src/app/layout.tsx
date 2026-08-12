@@ -18,13 +18,19 @@ export const metadata: Metadata = {
   description: "A focused kanban board. Add tasks, move them, get them done.",
 };
 
+const themeScript = `(function(){try{var s=localStorage.getItem("tmb_theme");var d=s==="dark"||(s!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-stone-50 font-sans text-stone-900">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-full bg-background font-sans text-foreground">
         {children}
       </body>
     </html>

@@ -24,7 +24,7 @@ export default function SiteFooter() {
   }, []);
 
   return (
-    <footer className="border-t border-stone-200 bg-stone-900 text-stone-300">
+    <footer className="border-t border-stone-200 bg-stone-900 text-stone-300 dark:border-stone-800 dark:bg-black">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4">
         <div className="md:col-span-2">
           <p className="text-sm font-semibold text-white">Task Management Board</p>

@@ -80,7 +80,7 @@ export function TaskCardFace({
 
   if (editing && canEdit) {
     return (
-      <article className="rounded-xl border border-teal-700/30 bg-white p-3 shadow-sm">
+      <article className="rounded-xl border border-teal-700/30 bg-white p-3 shadow-sm dark:border-teal-500/30 dark:bg-stone-900">
         <form
           onSubmit={(event) => void handleSave(event)}
           onPointerDown={(event) => event.stopPropagation()}
@@ -89,7 +89,7 @@ export function TaskCardFace({
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm font-semibold text-stone-900 outline-none focus:border-teal-700"
+            className="w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm font-semibold text-stone-900 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-50"
             autoFocus
           />
           <textarea
@@ -97,15 +97,15 @@ export function TaskCardFace({
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
             placeholder="Description (optional)"
-            className="w-full resize-none rounded-md border border-stone-300 px-2 py-1.5 text-xs text-stone-700 outline-none focus:border-teal-700"
+            className="w-full resize-none rounded-md border border-stone-300 bg-white px-2 py-1.5 text-xs text-stone-700 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-200"
           />
           <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
-          {error ? <p className="text-xs text-red-700">{error}</p> : null}
+          {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={busy || !title.trim()}
-              className="rounded-md bg-teal-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-teal-900 disabled:bg-stone-300"
+              className="rounded-md bg-teal-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-teal-900 disabled:bg-stone-300 dark:disabled:bg-stone-700"
             >
               {busy ? "Saving…" : "Save"}
             </button>
@@ -115,7 +115,7 @@ export function TaskCardFace({
                 setEditing(false);
                 resetForm();
               }}
-              className="rounded-md px-2.5 py-1 text-xs text-stone-600 hover:bg-stone-100"
+              className="rounded-md px-2.5 py-1 text-xs text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
             >
               Cancel
             </button>
@@ -127,21 +127,21 @@ export function TaskCardFace({
 
   return (
     <article
-      className={`rounded-xl border bg-white p-3 ${
+      className={`rounded-xl border bg-white p-3 dark:bg-stone-900 ${
         overlay
-          ? "border-teal-700/30 shadow-xl shadow-stone-900/10 ring-1 ring-teal-800/10"
-          : "border-stone-200 shadow-sm"
+          ? "border-teal-700/30 shadow-xl shadow-stone-900/20 ring-1 ring-teal-800/10 dark:border-teal-500/30"
+          : "border-stone-200 shadow-sm dark:border-stone-700"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="flex-1 text-sm font-semibold text-stone-900">{task.title}</h3>
+        <h3 className="flex-1 text-sm font-semibold text-stone-900 dark:text-stone-50">{task.title}</h3>
         <div className="flex items-center gap-0.5">
           {canEdit ? (
             <button
               type="button"
               onPointerDown={(event) => event.stopPropagation()}
               onClick={() => setEditing(true)}
-              className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-stone-100 hover:text-teal-800"
+              className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-stone-100 hover:text-teal-800 dark:hover:bg-stone-800 dark:hover:text-teal-300"
               aria-label={`Edit ${task.title}`}
             >
               Edit
@@ -154,7 +154,7 @@ export function TaskCardFace({
               onClick={() => {
                 void onDelete(task.id);
               }}
-              className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-red-50 hover:text-red-700"
+              className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950 dark:hover:text-red-400"
               aria-label={`Delete ${task.title}`}
             >
               ✕
@@ -163,7 +163,7 @@ export function TaskCardFace({
         </div>
       </div>
       {task.description ? (
-        <p className="mt-1 text-xs leading-5 text-stone-500">{task.description}</p>
+        <p className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">{task.description}</p>
       ) : null}
       <TaskDates task={task} />
     </article>
@@ -177,12 +177,12 @@ function TaskDates({ task }: { task: Task }) {
           key: "due",
           label: "Due",
           value: task.due_date,
-          className: isPastDate(task.due_date) && !task.completed_date ? "text-amber-800" : "text-stone-500",
+          className: isPastDate(task.due_date) && !task.completed_date ? "text-amber-800 dark:text-amber-300" : "text-stone-500 dark:text-stone-400",
         }
       : null,
-    task.start_date ? { key: "start", label: "Started", value: task.start_date, className: "text-stone-500" } : null,
+    task.start_date ? { key: "start", label: "Started", value: task.start_date, className: "text-stone-500 dark:text-stone-400" } : null,
     task.completed_date
-      ? { key: "done", label: "Completed", value: task.completed_date, className: "text-teal-800" }
+      ? { key: "done", label: "Completed", value: task.completed_date, className: "text-teal-800 dark:text-teal-300" }
       : null,
   ].filter((item): item is { key: string; label: string; value: string; className: string } => item !== null);
 

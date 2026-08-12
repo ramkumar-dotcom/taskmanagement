@@ -45,13 +45,13 @@ export default function BoardSwitcher({
   return (
     <div className="flex flex-wrap items-end gap-3">
       <label className="text-sm">
-        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400">
+        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
           Board
         </span>
         <select
           value={selectedId ?? ""}
           onChange={(event) => onSelect(Number(event.target.value))}
-          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-teal-700"
+          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
         >
           {boards.length === 0 ? <option value="">No boards yet</option> : null}
           {boards.map((board) => (
@@ -65,21 +65,21 @@ export default function BoardSwitcher({
       {open ? (
         <form onSubmit={(event) => void handleCreate(event)} className="flex flex-wrap items-end gap-2">
           <label className="text-sm">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
               New board name
             </span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Sprint planning"
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-700"
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
               autoFocus
             />
           </label>
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="rounded-lg bg-teal-800 px-3 py-2 text-sm font-medium text-white hover:bg-teal-900 disabled:bg-stone-300"
+            className="rounded-lg bg-teal-800 px-3 py-2 text-sm font-medium text-white hover:bg-teal-900 disabled:bg-stone-300 dark:disabled:bg-stone-700"
           >
             {busy ? "Creating…" : "Create"}
           </button>
@@ -89,7 +89,7 @@ export default function BoardSwitcher({
               setOpen(false);
               setError("");
             }}
-            className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-100"
+            className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
           >
             Cancel
           </button>
@@ -98,12 +98,12 @@ export default function BoardSwitcher({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50"
+          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-800"
         >
           New board
         </button>
       )}
-      {error ? <p className="w-full text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="w-full text-sm text-red-700 dark:text-red-400">{error}</p> : null}
     </div>
   );
 }
