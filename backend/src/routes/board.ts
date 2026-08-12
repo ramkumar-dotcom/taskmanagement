@@ -4,12 +4,18 @@
 
 import { Router } from "express";
 import type { Board, BoardWithColumns, Column, Task } from "@tmb/shared";
-import { query } from "../db";
+import { describeError, ensureDatabase, query } from "../db";
 
 const router = Router();
 
 router.get("/board", async (_req, res) => {
   try {
+    try {
+      await ensureDatabase();
+    } catch (migrateErr) {
+      console.error("migrate failed, reading tables anyway:", migrateErr);
+    }
+
     const boardResult = await query<Board>(
       "SELECT id, name, created_at FROM boards ORDER BY id ASC LIMIT 1",
     );
@@ -50,7 +56,7 @@ router.get("/board", async (_req, res) => {
     res.json(payload);
   } catch (err) {
     console.error("GET /api/board failed:", err);
-    res.status(500).json({ error: "Could not load the board." });
+    res.status(500).json({ error: describeError(err) });
   }
 });
 

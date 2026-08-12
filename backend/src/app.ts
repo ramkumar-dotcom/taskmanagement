@@ -2,7 +2,7 @@ import express from "express";
 import type { ErrorRequestHandler } from "express";
 import cors from "cors";
 import { config } from "./config";
-import { describeError, ensureDatabase } from "./db";
+import { describeError } from "./db";
 import healthRoutes from "./routes/health";
 import boardRoutes from "./routes/board";
 import taskRoutes from "./routes/tasks";
@@ -33,16 +33,6 @@ app.use(express.json());
 // Health must not wait on a database migrate — that is what made
 // /api/health spin forever on Vercel when Neon/SQLite failed to open.
 app.use("/api", healthRoutes);
-
-app.use((req, res, next) => {
-  if (req.path === "/" || req.path.startsWith("/api/health")) {
-    next();
-    return;
-  }
-  void ensureDatabase()
-    .then(() => next())
-    .catch(next);
-});
 app.use("/api", boardRoutes);
 app.use("/api", taskRoutes);
 

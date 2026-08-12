@@ -29,7 +29,7 @@ async function request(path: string, options: RequestInit = {}): Promise<unknown
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...options.headers,
     },
     cache: "no-store",

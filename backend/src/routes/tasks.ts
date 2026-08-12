@@ -4,7 +4,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Task } from "@tmb/shared";
-import { nowSql, query } from "../db";
+import { ensureDatabase, nowSql, query } from "../db";
 import type { SqlValue } from "../db";
 
 const router = Router();
@@ -46,6 +46,11 @@ router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res)
   }
 
   try {
+    try {
+      await ensureDatabase();
+    } catch {
+      // Tables may already exist.
+    }
     const column = await query<{ id: number }>("SELECT id FROM columns WHERE id = $1", [columnId]);
     if (column.rows.length === 0) {
       badRequest(res, "column does not exist");
