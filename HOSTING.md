@@ -61,7 +61,7 @@ Keep this private. You will paste it only into Vercel.
 
    | Name | Value |
    | --- | --- |
-   | `NEXT_PUBLIC_API_URL` | `https://taskmanagement-api.vercel.app` (no trailing slash) |
+   | `NEXT_PUBLIC_API_URL` | Production API only, e.g. `https://taskmanagement-9qrq.vercel.app` (no trailing slash). Never use a `*-git-*` or `*-hash-*` preview URL. |
 
 4. Deploy.
 5. Copy the frontend URL, e.g. `https://taskmanagement.vercel.app`.

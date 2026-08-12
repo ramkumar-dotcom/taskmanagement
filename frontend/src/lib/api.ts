@@ -17,9 +17,17 @@ import { getApiErrorMessage, parseBoard, parseHealth, parseTaskResponse } from "
 const PRODUCTION_API = "https://taskmanagement-9qrq.vercel.app";
 
 function resolveApiUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-  // Vercel builds without the env var used to call localhost — that always fails.
-  if (process.env.VERCEL) return PRODUCTION_API;
+  const raw = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+  // Preview URLs look like taskmanagement-9qrq-<hash>-rameshs-projects-....vercel.app
+  // Those deploys are old and /api/board returns 500. Always use Production.
+  const isPreviewApi =
+    raw.includes("-rameshs-projects-") ||
+    raw.includes("-git-") ||
+    /taskmanagement-9qrq-[a-z0-9]+/i.test(raw);
+  if (isPreviewApi || (!raw && process.env.VERCEL)) {
+    return PRODUCTION_API;
+  }
+  if (raw) return raw;
   return "http://localhost:4000";
 }
 
