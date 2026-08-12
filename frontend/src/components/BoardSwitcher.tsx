@@ -43,7 +43,7 @@ export default function BoardSwitcher({
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-end gap-3">
+    <div className="flex flex-wrap items-end gap-3">
       <label className="text-sm">
         <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400">
           Board

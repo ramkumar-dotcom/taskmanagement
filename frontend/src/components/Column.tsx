@@ -3,6 +3,8 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { ColumnWithTasks, CreateTaskRequest } from "@tmb/shared";
+import type { DateFilterField } from "@/lib/dates";
+import { taskMatchesDateFilter } from "@/lib/dates";
 import { columnDragId, taskDragId } from "@/lib/dnd";
 import AddTaskForm from "./AddTaskForm";
 import TaskCard from "./TaskCard";
@@ -28,14 +30,30 @@ interface ColumnProps {
       completedDate?: string | null;
     },
   ) => Promise<void>;
+  dateFrom: string;
+  dateTo: string;
+  dateField: DateFilterField;
 }
 
-export default function Column({ column, index, onCreate, onDelete, onEdit }: ColumnProps) {
+export default function Column({
+  column,
+  index,
+  onCreate,
+  onDelete,
+  onEdit,
+  dateFrom,
+  dateTo,
+  dateField,
+}: ColumnProps) {
   const accent = ACCENTS[index % ACCENTS.length];
   const { setNodeRef, isOver } = useDroppable({
     id: columnDragId(column.id),
     data: { type: "column", columnId: column.id },
   });
+  const visibleTasks = column.tasks.filter((task) =>
+    taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+  );
+  const filterActive = Boolean(dateFrom || dateTo);
 
   return (
     <section
@@ -48,16 +66,16 @@ export default function Column({ column, index, onCreate, onDelete, onEdit }: Co
           {column.name}
         </h2>
         <span className="rounded-full bg-white px-2 py-0.5 text-xs text-stone-500">
-          {column.tasks.length}
+          {filterActive ? `${visibleTasks.length}/${column.tasks.length}` : column.tasks.length}
         </span>
       </header>
 
       <div ref={setNodeRef} className="flex flex-1 flex-col gap-3">
         <SortableContext
-          items={column.tasks.map((task) => taskDragId(task.id))}
+          items={visibleTasks.map((task) => taskDragId(task.id))}
           strategy={verticalListSortingStrategy}
         >
-          {column.tasks.map((task) => (
+          {visibleTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -70,6 +88,11 @@ export default function Column({ column, index, onCreate, onDelete, onEdit }: Co
         {column.tasks.length === 0 ? (
           <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400">
             Drop a card here
+          </p>
+        ) : null}
+        {column.tasks.length > 0 && visibleTasks.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400">
+            No tasks in this date range
           </p>
         ) : null}
       </div>

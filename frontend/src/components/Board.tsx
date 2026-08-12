@@ -15,10 +15,12 @@ import { useEffect, useRef, useState } from "react";
 import type { BoardPageData, CreateTaskRequest, Task } from "@tmb/shared";
 import { createBoard, createTask, deleteTask, getBoard, listBoards, updateTask } from "@/lib/api";
 import { readSelectedBoardId, readUser, saveSelectedBoardId } from "@/lib/auth";
+import { taskMatchesDateFilter, type DateFilterField } from "@/lib/dates";
 import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
 import { errorMessage } from "@/lib/parse";
 import BoardSwitcher from "./BoardSwitcher";
 import Column from "./Column";
+import DateRangeFilter from "./DateRangeFilter";
 import { TaskCardFace } from "./TaskCard";
 
 const dropAnimation: DropAnimation = {
@@ -38,6 +40,9 @@ export default function Board({ initial }: BoardProps) {
   const [boards, setBoards] = useState<{ id: number; name: string; created_at: string }[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [error, setError] = useState(initial.error);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [dateField, setDateField] = useState<DateFilterField>("column");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
   const dragOrigin = useRef<{ columnId: number; position: number } | null>(null);
@@ -198,14 +203,39 @@ export default function Board({ initial }: BoardProps) {
         </p>
       </header>
 
-      <BoardSwitcher
-        boards={boards}
-        selectedId={selectedId}
-        onSelect={(boardId) => {
-          void handleSelectBoard(boardId);
-        }}
-        onCreate={handleCreateBoard}
-      />
+      <div className="mb-6 flex flex-col gap-4">
+        <BoardSwitcher
+          boards={boards}
+          selectedId={selectedId}
+          onSelect={(boardId) => {
+            void handleSelectBoard(boardId);
+          }}
+          onCreate={handleCreateBoard}
+        />
+        <DateRangeFilter
+          from={dateFrom}
+          to={dateTo}
+          field={dateField}
+          matchCount={
+            board?.columns.reduce(
+              (count, column) =>
+                count +
+                column.tasks.filter((task) =>
+                  taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+                ).length,
+              0,
+            ) ?? 0
+          }
+          totalCount={board?.columns.reduce((count, column) => count + column.tasks.length, 0) ?? 0}
+          onFromChange={setDateFrom}
+          onToChange={setDateTo}
+          onFieldChange={setDateField}
+          onClear={() => {
+            setDateFrom("");
+            setDateTo("");
+          }}
+        />
+      </div>
 
       {error ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -231,6 +261,9 @@ export default function Board({ initial }: BoardProps) {
                 onCreate={handleCreate}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                dateField={dateField}
               />
             ))}
           </div>
