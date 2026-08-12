@@ -42,6 +42,7 @@ export interface HealthResponse {
   service: string;
   database: DatabaseStatus;
   driver?: DatabaseDriver;
+  release?: string;
   error?: string;
 }
 
