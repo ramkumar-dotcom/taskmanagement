@@ -216,7 +216,10 @@ async function migrate(): Promise<void> {
 
 export function ensureDatabase(): Promise<void> {
   if (!migratePromise) {
-    migratePromise = migrate();
+    migratePromise = migrate().catch((err) => {
+      migratePromise = undefined;
+      throw err;
+    });
   }
   return migratePromise;
 }

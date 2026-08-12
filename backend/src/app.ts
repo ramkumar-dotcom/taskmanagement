@@ -2,7 +2,7 @@ import express from "express";
 import type { ErrorRequestHandler } from "express";
 import cors from "cors";
 import { config } from "./config";
-import { ensureDatabase } from "./db";
+import { describeError, ensureDatabase } from "./db";
 import healthRoutes from "./routes/health";
 import boardRoutes from "./routes/board";
 import taskRoutes from "./routes/tasks";
@@ -64,7 +64,7 @@ const jsonErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
   console.error(err);
-  res.status(500).json({ error: "Unexpected server error." });
+  res.status(500).json({ error: describeError(err) || "Unexpected server error." });
 };
 
 app.use(jsonErrorHandler);
