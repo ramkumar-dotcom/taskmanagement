@@ -26,6 +26,29 @@ export function findTask(board: BoardWithColumns, taskId: number): Task | undefi
   return undefined;
 }
 
+export function moveTask(
+  board: BoardWithColumns,
+  taskId: number,
+  columnId: number,
+  position: number,
+): BoardWithColumns {
+  const task = findTask(board, taskId);
+  if (!task) return board;
+
+  const columns = board.columns.map((column) => ({
+    ...column,
+    tasks: column.tasks.filter((item) => item.id !== taskId),
+  }));
+  const dest = columns.find((column) => column.id === columnId);
+  if (!dest) return board;
+
+  const nextTasks = [...dest.tasks];
+  const insertAt = Math.max(0, Math.min(position, nextTasks.length));
+  nextTasks.splice(insertAt, 0, { ...task, column_id: columnId, position: insertAt });
+  dest.tasks = nextTasks.map((item, index) => ({ ...item, position: index }));
+  return { ...board, columns };
+}
+
 export function dropIndex(
   board: BoardWithColumns,
   draggedId: number,

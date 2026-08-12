@@ -5,6 +5,44 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Task } from "@tmb/shared";
 import { taskDragId } from "@/lib/dnd";
 
+interface TaskCardFaceProps {
+  task: Task;
+  onDelete?: (taskId: number) => Promise<void>;
+  overlay?: boolean;
+}
+
+export function TaskCardFace({ task, onDelete, overlay = false }: TaskCardFaceProps) {
+  return (
+    <article
+      className={`rounded-xl border bg-white p-3 ${
+        overlay
+          ? "border-teal-700/30 shadow-xl shadow-stone-900/10 ring-1 ring-teal-800/10"
+          : "border-stone-200 shadow-sm"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="flex-1 text-sm font-semibold text-stone-900">{task.title}</h3>
+        {onDelete ? (
+          <button
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => {
+              void onDelete(task.id);
+            }}
+            className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-red-50 hover:text-red-700"
+            aria-label={`Delete ${task.title}`}
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+      {task.description ? (
+        <p className="mt-1 text-xs leading-5 text-stone-500">{task.description}</p>
+      ) : null}
+    </article>
+  );
+}
+
 interface TaskCardProps {
   task: Task;
   onDelete: (taskId: number) => Promise<void>;
@@ -17,42 +55,17 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
   });
 
   return (
-    <article
+    <div
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
-        transition,
+        transition: transition ?? "transform 200ms cubic-bezier(0.25, 1, 0.5, 1)",
       }}
-      className={`rounded-xl border border-stone-200 bg-white p-3 shadow-sm ${
-        isDragging ? "z-10 opacity-60 ring-2 ring-teal-700/30" : ""
-      }`}
+      className={`touch-none ${isDragging ? "z-10 opacity-30" : ""}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <button
-          type="button"
-          className="mt-0.5 cursor-grab touch-none text-stone-300 hover:text-stone-500 active:cursor-grabbing"
-          aria-label={`Drag ${task.title}`}
-          {...attributes}
-          {...listeners}
-        >
-          ⋮⋮
-        </button>
-        <h3 className="flex-1 text-sm font-semibold text-stone-900">{task.title}</h3>
-        <button
-          type="button"
-          onClick={() => {
-            void onDelete(task.id);
-          }}
-          className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-red-50 hover:text-red-700"
-          aria-label={`Delete ${task.title}`}
-        >
-          ✕
-        </button>
+      <div className="cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+        <TaskCardFace task={task} onDelete={onDelete} />
       </div>
-
-      {task.description ? (
-        <p className="mt-1 pl-6 text-xs leading-5 text-stone-500">{task.description}</p>
-      ) : null}
-    </article>
+    </div>
   );
 }

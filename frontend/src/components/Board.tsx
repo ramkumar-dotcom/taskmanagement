@@ -2,18 +2,32 @@
 
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCorners,
+  defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type DropAnimation,
 } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
-import type { BoardPageData, CreateTaskRequest } from "@tmb/shared";
+import type { BoardPageData, CreateTaskRequest, Task } from "@tmb/shared";
 import { createTask, deleteTask, getBoard, updateTask } from "@/lib/api";
-import { dropIndex, findTask, parseTaskDragId } from "@/lib/dnd";
+import { dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
 import { errorMessage } from "@/lib/parse";
 import Column from "./Column";
+import { TaskCardFace } from "./TaskCard";
+
+const dropAnimation: DropAnimation = {
+  duration: 220,
+  easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: { active: { opacity: "0.3" } },
+  }),
+};
 
 interface BoardProps {
   initial: BoardPageData;
@@ -22,8 +36,9 @@ interface BoardProps {
 export default function Board({ initial }: BoardProps) {
   const [board, setBoard] = useState(initial.board);
   const [error, setError] = useState(initial.error);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
   useEffect(() => {
@@ -49,36 +64,43 @@ export default function Board({ initial }: BoardProps) {
     await load();
   }
 
-  async function handleDragEnd(event: DragEndEvent): Promise<void> {
+  function handleDragStart(event: DragStartEvent): void {
+    if (!board) return;
+    const taskId = parseTaskDragId(String(event.active.id));
+    if (taskId === null) return;
+    setActiveTask(findTask(board, taskId) ?? null);
+  }
+
+  function handleDragOver(event: DragOverEvent): void {
     if (!board || !event.over) return;
     const taskId = parseTaskDragId(String(event.active.id));
     if (taskId === null) return;
 
-    const current = findTask(board, taskId);
-    if (!current) return;
-
     const dest = dropIndex(board, taskId, String(event.over.id));
     if (!dest) return;
+
+    const current = findTask(board, taskId);
+    if (!current) return;
     const sourceColumn = board.columns.find((column) => column.id === current.column_id);
     const visualIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
     if (dest.columnId === current.column_id && dest.position === visualIndex) return;
 
-    const nextColumns = board.columns.map((column) => ({
-      ...column,
-      tasks: column.tasks.filter((task) => task.id !== taskId),
-    }));
-    const destColumn = nextColumns.find((column) => column.id === dest.columnId);
-    if (!destColumn) return;
-    destColumn.tasks.splice(dest.position, 0, {
-      ...current,
-      column_id: dest.columnId,
-      position: dest.position,
-    });
-    setBoard({ ...board, columns: nextColumns });
+    setBoard(moveTask(board, taskId, dest.columnId, dest.position));
+  }
+
+  async function handleDragEnd(event: DragEndEvent): Promise<void> {
+    const dragging = activeTask;
+    setActiveTask(null);
+    if (!board || !dragging) return;
+
+    const current = findTask(board, dragging.id);
+    if (!current) return;
 
     try {
-      await updateTask(taskId, { columnId: dest.columnId, position: dest.position });
-      await load();
+      await updateTask(dragging.id, {
+        columnId: current.column_id,
+        position: current.position,
+      });
     } catch (err) {
       setError(errorMessage(err));
       await load();
@@ -95,7 +117,7 @@ export default function Board({ initial }: BoardProps) {
           Task Management Board
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-stone-500">
-          Drag a card by the handle to move it. Changes save to your board.
+          Drag any card to another column or to a new spot in the list.
         </p>
       </header>
 
@@ -106,7 +128,14 @@ export default function Board({ initial }: BoardProps) {
       ) : null}
 
       {board ? (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={(event) => void handleDragEnd(event)}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={(event) => void handleDragEnd(event)}
+          onDragCancel={() => setActiveTask(null)}
+        >
           <div className="grid gap-4 md:grid-cols-3">
             {board.columns.map((column, index) => (
               <Column
@@ -118,6 +147,9 @@ export default function Board({ initial }: BoardProps) {
               />
             ))}
           </div>
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeTask ? <TaskCardFace task={activeTask} overlay /> : null}
+          </DragOverlay>
         </DndContext>
       ) : !error ? (
         <p className="text-sm text-stone-500">Loading board…</p>
