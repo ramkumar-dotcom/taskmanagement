@@ -14,7 +14,16 @@ import type {
 } from "@tmb/shared";
 import { getApiErrorMessage, parseBoard, parseHealth, parseTaskResponse } from "./parse";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const PRODUCTION_API = "https://taskmanagement-9qrq.vercel.app";
+
+function resolveApiUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  // Vercel builds without the env var used to call localhost — that always fails.
+  if (process.env.VERCEL) return PRODUCTION_API;
+  return "http://localhost:4000";
+}
+
+const API_URL = resolveApiUrl();
 
 async function request(path: string, options: RequestInit = {}): Promise<unknown> {
   const response = await fetch(`${API_URL}${path}`, {

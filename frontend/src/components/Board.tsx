@@ -29,7 +29,7 @@ export default function Board({ initial }: BoardProps) {
       setError("");
     } catch (err) {
       setHealth({ label: "Cannot reach the API", ok: false });
-      setError(`${errorMessage(err)} — is the backend running on port 4000?`);
+      setError(`${errorMessage(err)} — check NEXT_PUBLIC_API_URL`);
     }
   }
 

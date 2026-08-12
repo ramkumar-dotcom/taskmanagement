@@ -28,7 +28,7 @@ async function loadInitial(): Promise<BoardPageData> {
     return {
       board: null,
       health: { label: "Cannot reach the API", ok: false },
-      error: `${errorMessage(err)} — is the backend running on port 4000?`,
+      error: `${errorMessage(err)} — could not load https://taskmanagement-9qrq.vercel.app`,
     };
   }
 }
