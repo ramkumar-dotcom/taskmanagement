@@ -64,6 +64,14 @@ export default function Board({ initial }: BoardProps) {
     await load();
   }
 
+  async function handleEdit(
+    taskId: number,
+    fields: { title: string; description: string },
+  ): Promise<void> {
+    await updateTask(taskId, fields);
+    await load();
+  }
+
   function handleDragStart(event: DragStartEvent): void {
     if (!board) return;
     const taskId = parseTaskDragId(String(event.active.id));
@@ -144,6 +152,7 @@ export default function Board({ initial }: BoardProps) {
                 index={index}
                 onCreate={handleCreate}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
               />
             ))}
           </div>

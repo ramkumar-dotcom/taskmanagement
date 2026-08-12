@@ -99,6 +99,24 @@ router.patch(
     const updates: string[] = [];
     const values: SqlValue[] = [];
 
+    const editingText =
+      typeof req.body.title === "string" || typeof req.body.description === "string";
+
+    if (editingText) {
+      const current = await query<{ column_name: string }>(
+        `SELECT c.name AS column_name
+         FROM tasks t
+         JOIN columns c ON c.id = t.column_id
+         WHERE t.id = $1`,
+        [id],
+      );
+      const columnName = current.rows[0]?.column_name ?? "";
+      if (columnName.trim().toLowerCase() === "done") {
+        res.status(403).json({ error: "Done tasks cannot be edited." });
+        return;
+      }
+    }
+
     if (typeof req.body.title === "string") {
       const title = req.body.title.trim();
       if (!title) {

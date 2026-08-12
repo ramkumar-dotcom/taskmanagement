@@ -18,9 +18,10 @@ interface ColumnProps {
   index: number;
   onCreate: (input: CreateTaskRequest) => Promise<void>;
   onDelete: (taskId: number) => Promise<void>;
+  onEdit: (taskId: number, fields: { title: string; description: string }) => Promise<void>;
 }
 
-export default function Column({ column, index, onCreate, onDelete }: ColumnProps) {
+export default function Column({ column, index, onCreate, onDelete, onEdit }: ColumnProps) {
   const accent = ACCENTS[index % ACCENTS.length];
   const { setNodeRef, isOver } = useDroppable({
     id: columnDragId(column.id),
@@ -48,7 +49,13 @@ export default function Column({ column, index, onCreate, onDelete }: ColumnProp
           strategy={verticalListSortingStrategy}
         >
           {column.tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onDelete={onDelete} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              columnName={column.name}
+              onDelete={onDelete}
+              onEdit={onEdit}
+            />
           ))}
         </SortableContext>
         {column.tasks.length === 0 ? (
