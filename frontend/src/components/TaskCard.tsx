@@ -3,11 +3,13 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, type FormEvent } from "react";
-import type { Task } from "@tmb/shared";
+import type { Task, TaskPriority } from "@tmb/shared";
 import { columnDateKind, columnDateLabel, isDoneColumnName } from "@/lib/columns";
 import { formatDate, isPastDate } from "@/lib/dates";
 import { taskDragId } from "@/lib/dnd";
+import { priorityBadgeClass, priorityBarClass } from "@/lib/priority";
 import DateField from "./DateField";
+import PriorityField from "./PriorityField";
 
 type TaskEditFields = {
   title: string;
@@ -15,6 +17,7 @@ type TaskEditFields = {
   dueDate?: string | null;
   startDate?: string | null;
   completedDate?: string | null;
+  priority?: TaskPriority;
 };
 
 interface TaskCardFaceProps {
@@ -41,6 +44,7 @@ export function TaskCardFace({
     (dateKind === "due" ? task.due_date : dateKind === "start" ? task.start_date : task.completed_date) ??
       "",
   );
+  const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,6 +55,7 @@ export function TaskCardFace({
       (dateKind === "due" ? task.due_date : dateKind === "start" ? task.start_date : task.completed_date) ??
         "",
     );
+    setPriority(task.priority);
     setError("");
   }
 
@@ -69,6 +74,7 @@ export function TaskCardFace({
       if (dateKind === "due") fields.dueDate = date || null;
       if (dateKind === "start") fields.startDate = date || null;
       if (dateKind === "completed") fields.completedDate = date || null;
+      fields.priority = priority;
       await onEdit(task.id, fields);
       setEditing(false);
     } catch (err) {
@@ -100,6 +106,7 @@ export function TaskCardFace({
             className="w-full resize-none rounded-md border border-stone-300 bg-white px-2 py-1.5 text-xs text-stone-700 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-200"
           />
           <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
+          <PriorityField value={priority} onChange={setPriority} />
           {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
           <div className="flex gap-2">
             <button
@@ -127,13 +134,14 @@ export function TaskCardFace({
 
   return (
     <article
-      className={`rounded-xl border bg-white p-3 dark:bg-stone-900 ${
+      className={`relative overflow-hidden rounded-xl border bg-white p-3 dark:bg-stone-900 ${
         overlay
           ? "border-teal-700/30 shadow-xl shadow-stone-900/20 ring-1 ring-teal-800/10 dark:border-teal-500/30"
           : "border-stone-200 shadow-sm dark:border-stone-700"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <span className={`absolute inset-y-0 left-0 w-1 ${priorityBarClass(task.priority)}`} aria-hidden />
+      <div className="flex items-start justify-between gap-2 pl-1.5">
         <h3 className="flex-1 text-sm font-semibold text-stone-900 dark:text-stone-50">{task.title}</h3>
         <div className="flex items-center gap-0.5">
           {canEdit ? (
@@ -162,10 +170,17 @@ export function TaskCardFace({
           ) : null}
         </div>
       </div>
+      <span
+        className={`mt-2 ml-1.5 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityBadgeClass(task.priority)}`}
+      >
+        {task.priority}
+      </span>
       {task.description ? (
-        <p className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">{task.description}</p>
+        <p className="mt-1 pl-1.5 text-xs leading-5 text-stone-500 dark:text-stone-400">{task.description}</p>
       ) : null}
-      <TaskDates task={task} />
+      <div className="pl-1.5">
+        <TaskDates task={task} />
+      </div>
     </article>
   );
 }

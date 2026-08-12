@@ -12,11 +12,12 @@ import {
   type DropAnimation,
 } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
-import type { BoardPageData, CreateTaskRequest, Task } from "@tmb/shared";
+import type { BoardPageData, CreateTaskRequest, Task, TaskPriority } from "@tmb/shared";
 import { createBoard, createTask, deleteTask, getBoard, listBoards, updateTask } from "@/lib/api";
 import { readSelectedBoardId, readUser, saveSelectedBoardId } from "@/lib/auth";
 import { taskMatchesDateFilter, type DateFilterField } from "@/lib/dates";
 import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
+import type { TaskSort } from "@/lib/priority";
 import { errorMessage } from "@/lib/parse";
 import BoardSwitcher from "./BoardSwitcher";
 import Column from "./Column";
@@ -43,6 +44,7 @@ export default function Board({ initial }: BoardProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [dateField, setDateField] = useState<DateFilterField>("column");
+  const [sort, setSort] = useState<TaskSort>("board");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
   const dragOrigin = useRef<{ columnId: number; position: number } | null>(null);
@@ -121,6 +123,7 @@ export default function Board({ initial }: BoardProps) {
       dueDate?: string | null;
       startDate?: string | null;
       completedDate?: string | null;
+      priority?: TaskPriority;
     },
   ): Promise<void> {
     await updateTask(taskId, fields);
@@ -212,29 +215,45 @@ export default function Board({ initial }: BoardProps) {
           }}
           onCreate={handleCreateBoard}
         />
-        <DateRangeFilter
-          from={dateFrom}
-          to={dateTo}
-          field={dateField}
-          matchCount={
-            board?.columns.reduce(
-              (count, column) =>
-                count +
-                column.tasks.filter((task) =>
-                  taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
-                ).length,
-              0,
-            ) ?? 0
-          }
-          totalCount={board?.columns.reduce((count, column) => count + column.tasks.length, 0) ?? 0}
-          onFromChange={setDateFrom}
-          onToChange={setDateTo}
-          onFieldChange={setDateField}
-          onClear={() => {
-            setDateFrom("");
-            setDateTo("");
-          }}
-        />
+        <div className="flex flex-wrap items-end gap-3">
+          <DateRangeFilter
+            from={dateFrom}
+            to={dateTo}
+            field={dateField}
+            matchCount={
+              board?.columns.reduce(
+                (count, column) =>
+                  count +
+                  column.tasks.filter((task) =>
+                    taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+                  ).length,
+                0,
+              ) ?? 0
+            }
+            totalCount={board?.columns.reduce((count, column) => count + column.tasks.length, 0) ?? 0}
+            onFromChange={setDateFrom}
+            onToChange={setDateTo}
+            onFieldChange={setDateField}
+            onClear={() => {
+              setDateFrom("");
+              setDateTo("");
+            }}
+          />
+          <label className="text-sm">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
+              Sort
+            </span>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as TaskSort)}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            >
+              <option value="board">Board order</option>
+              <option value="priority-desc">Priority: high to low</option>
+              <option value="priority-asc">Priority: low to high</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {error ? (
@@ -264,6 +283,7 @@ export default function Board({ initial }: BoardProps) {
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 dateField={dateField}
+                sort={sort}
               />
             ))}
           </div>

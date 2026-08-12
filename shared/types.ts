@@ -4,6 +4,8 @@
 // Field names match the SQL columns (snake_case) on purpose.
 // =============================================================================
 
+export type TaskPriority = "low" | "medium" | "high";
+
 export interface Task {
   id: number;
   column_id: number;
@@ -14,6 +16,7 @@ export interface Task {
   due_date: string | null;
   start_date: string | null;
   completed_date: string | null;
+  priority: TaskPriority;
 }
 
 export interface Column {
@@ -60,6 +63,7 @@ export interface CreateTaskRequest {
   dueDate?: string;
   startDate?: string;
   completedDate?: string;
+  priority?: TaskPriority;
 }
 
 export interface UpdateTaskRequest {
@@ -70,6 +74,7 @@ export interface UpdateTaskRequest {
   dueDate?: string | null;
   startDate?: string | null;
   completedDate?: string | null;
+  priority?: TaskPriority;
 }
 
 export interface BoardHealthState {

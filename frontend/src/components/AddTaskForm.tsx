@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { CreateTaskRequest } from "@tmb/shared";
+import type { CreateTaskRequest, TaskPriority } from "@tmb/shared";
 import { columnDateKind, columnDateLabel } from "@/lib/columns";
 import { errorMessage } from "@/lib/parse";
 import DateField from "./DateField";
+import PriorityField from "./PriorityField";
 
 interface AddTaskFormProps {
   columnId: number;
@@ -16,6 +17,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const dateKind = columnDateKind(columnName);
@@ -31,6 +33,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
         title: title.trim(),
         description: description.trim() || undefined,
         columnId,
+        priority,
       };
       if (date) {
         if (dateKind === "due") payload.dueDate = date;
@@ -41,6 +44,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
       setTitle("");
       setDescription("");
       setDate("");
+      setPriority("medium");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -64,6 +68,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
         className="w-full resize-none rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs text-stone-700 outline-none placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-500"
       />
       <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
+      <PriorityField value={priority} onChange={setPriority} />
       <button
         type="submit"
         disabled={busy || !title.trim()}

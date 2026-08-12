@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   due_date       DATE,
   start_date     DATE,
   completed_date DATE,
+  priority       VARCHAR(10) NOT NULL DEFAULT 'medium',
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

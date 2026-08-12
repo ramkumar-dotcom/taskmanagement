@@ -2,10 +2,11 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { ColumnWithTasks, CreateTaskRequest } from "@tmb/shared";
+import type { ColumnWithTasks, CreateTaskRequest, TaskPriority } from "@tmb/shared";
 import type { DateFilterField } from "@/lib/dates";
 import { taskMatchesDateFilter } from "@/lib/dates";
 import { columnDragId, taskDragId } from "@/lib/dnd";
+import { sortTasks, type TaskSort } from "@/lib/priority";
 import AddTaskForm from "./AddTaskForm";
 import TaskCard from "./TaskCard";
 
@@ -28,11 +29,13 @@ interface ColumnProps {
       dueDate?: string | null;
       startDate?: string | null;
       completedDate?: string | null;
+      priority?: TaskPriority;
     },
   ) => Promise<void>;
   dateFrom: string;
   dateTo: string;
   dateField: DateFilterField;
+  sort: TaskSort;
 }
 
 export default function Column({
@@ -44,14 +47,18 @@ export default function Column({
   dateFrom,
   dateTo,
   dateField,
+  sort,
 }: ColumnProps) {
   const accent = ACCENTS[index % ACCENTS.length];
   const { setNodeRef, isOver } = useDroppable({
     id: columnDragId(column.id),
     data: { type: "column", columnId: column.id },
   });
-  const visibleTasks = column.tasks.filter((task) =>
-    taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+  const visibleTasks = sortTasks(
+    column.tasks.filter((task) =>
+      taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+    ),
+    sort,
   );
   const filterActive = Boolean(dateFrom || dateTo);
 

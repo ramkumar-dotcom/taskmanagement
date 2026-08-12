@@ -11,6 +11,7 @@ import { config } from "./config";
 import {
   addBoardOwnerSql,
   addTaskDatesSql,
+  addTaskPrioritySql,
   postgresSchema,
   postgresSequenceFix,
   removeDemoTasksSql,
@@ -214,6 +215,11 @@ async function migrate(): Promise<void> {
     } catch {
       // columns may already exist
     }
+    try {
+      await execStatements(addTaskPrioritySql);
+    } catch {
+      // column may already exist
+    }
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {
       await execStatements(seedSql);
@@ -236,6 +242,11 @@ async function migrate(): Promise<void> {
     } catch {
       // column may already exist
     }
+  }
+  try {
+    getSqlite().exec(`ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'`);
+  } catch {
+    // column may already exist
   }
   const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
   if (Number(count.rows[0]?.n ?? 0) === 0) {

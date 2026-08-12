@@ -74,6 +74,10 @@ function parseTask(value: unknown): Task {
       due_date: asOptionalDate(value.due_date),
       start_date: asOptionalDate(value.start_date),
       completed_date: asOptionalDate(value.completed_date),
+      priority:
+        value.priority === "low" || value.priority === "medium" || value.priority === "high"
+          ? value.priority
+          : "medium",
     };
   }
   throw new Error("API returned a task with an unexpected shape");

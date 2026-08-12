@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   due_date       TEXT,
   start_date     TEXT,
   completed_date TEXT,
+  priority       TEXT NOT NULL DEFAULT 'medium',
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );

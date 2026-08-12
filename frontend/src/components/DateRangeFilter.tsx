@@ -37,7 +37,7 @@ export default function DateRangeFilter({
   const reversed = Boolean(from && to && from > to);
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="contents">
       <label className="text-sm">
         <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
           Filter by
