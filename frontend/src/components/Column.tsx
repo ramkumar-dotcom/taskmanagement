@@ -15,9 +15,9 @@ import { taskMatchesView, type BoardView } from "@/lib/views";
 import TaskCard from "./TaskCard";
 
 const ACCENTS = [
-  "border-t-stone-400",
-  "border-t-amber-400",
-  "border-t-teal-600",
+  "border-t-stone-400 dark:border-t-stone-300",
+  "border-t-amber-400 dark:border-t-amber-300",
+  "border-t-teal-500 dark:border-t-teal-400",
 ] as const;
 
 interface ColumnProps {
@@ -129,8 +129,8 @@ export default function Column({
       }}
       className={`flex min-h-[28rem] w-72 shrink-0 flex-col rounded-2xl border border-t-4 bg-stone-100/80 p-4 ${accent} ${
         overWip
-          ? "border-amber-300 dark:border-amber-800"
-          : "border-stone-200 dark:border-stone-700"
+          ? "border-x-amber-300 border-b-amber-300 dark:border-x-amber-800 dark:border-b-amber-800"
+          : "border-x-stone-200 border-b-stone-200 dark:border-x-stone-700 dark:border-b-stone-700"
       } ${isOver ? "ring-2 ring-teal-500/30" : ""} ${overWip ? "dark:bg-amber-950/20" : "dark:bg-stone-900/80"} ${
         isDragging ? "z-10 opacity-60" : ""
       }`}

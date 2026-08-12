@@ -61,13 +61,13 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-3 gap-3 rounded-3xl border border-stone-200 bg-stone-100/80 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900/80">
           {[
-            { name: "To Do", tint: "border-t-stone-400" },
-            { name: "In Progress", tint: "border-t-amber-400" },
-            { name: "Done", tint: "border-t-teal-600" },
+            { name: "To Do", tint: "border-t-stone-400 dark:border-t-stone-300" },
+            { name: "In Progress", tint: "border-t-amber-400 dark:border-t-amber-300" },
+            { name: "Done", tint: "border-t-teal-500 dark:border-t-teal-400" },
           ].map((col) => (
             <div
               key={col.name}
-              className={`rounded-2xl border border-stone-200 border-t-4 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-950 ${col.tint}`}
+              className={`rounded-2xl border border-x-stone-200 border-b-stone-200 border-t-4 bg-stone-50 p-3 dark:border-x-stone-700 dark:border-b-stone-700 dark:bg-stone-950 ${col.tint}`}
             >
               <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                 {col.name}
