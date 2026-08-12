@@ -88,7 +88,7 @@ export default function Board({ initial }: BoardProps) {
     setBoard(moveTask(board, taskId, dest.columnId, dest.position));
   }
 
-  async function handleDragEnd(event: DragEndEvent): Promise<void> {
+  async function handleDragEnd(): Promise<void> {
     const dragging = activeTask;
     setActiveTask(null);
     if (!board || !dragging) return;
@@ -133,7 +133,7 @@ export default function Board({ initial }: BoardProps) {
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
-          onDragEnd={(event) => void handleDragEnd(event)}
+          onDragEnd={() => void handleDragEnd()}
           onDragCancel={() => setActiveTask(null)}
         >
           <div className="grid gap-4 md:grid-cols-3">
