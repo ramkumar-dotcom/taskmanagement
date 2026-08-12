@@ -1,4 +1,20 @@
+import {
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
+} from "@dnd-kit/core";
 import type { BoardWithColumns, Task } from "@tmb/shared";
+
+export const boardCollision: CollisionDetection = (args) => {
+  const pointerHits = pointerWithin(args);
+  const hits = pointerHits.length > 0 ? pointerHits : rectIntersection(args);
+  const overTask = hits.find((hit) => String(hit.id).startsWith("task-"));
+  if (overTask) return [overTask];
+  const overColumn = hits.find((hit) => String(hit.id).startsWith("column-"));
+  if (overColumn) return [overColumn];
+  return closestCorners(args);
+};
 
 export function taskDragId(taskId: number): string {
   return `task-${taskId}`;
@@ -72,6 +88,11 @@ export function dropIndex(
   if (overColumnId !== null) {
     const column = board.columns.find((item) => item.id === overColumnId);
     if (!column) return null;
+    const currentIndex = column.tasks.findIndex((item) => item.id === draggedId);
+    // Same column container — do not jump the card to the end.
+    if (currentIndex >= 0) {
+      return { columnId: column.id, position: currentIndex };
+    }
     const withoutDragged = column.tasks.filter((item) => item.id !== draggedId);
     return { columnId: column.id, position: withoutDragged.length };
   }

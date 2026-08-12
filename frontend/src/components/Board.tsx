@@ -4,7 +4,6 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
   defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
@@ -12,10 +11,10 @@ import {
   type DragStartEvent,
   type DropAnimation,
 } from "@dnd-kit/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BoardPageData, CreateTaskRequest, Task } from "@tmb/shared";
 import { createTask, deleteTask, getBoard, updateTask } from "@/lib/api";
-import { dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
+import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
 import { errorMessage } from "@/lib/parse";
 import Column from "./Column";
 import { TaskCardFace } from "./TaskCard";
@@ -36,8 +35,11 @@ export default function Board({ initial }: BoardProps) {
   const [board, setBoard] = useState(initial.board);
   const [error, setError] = useState(initial.error);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const boardRef = useRef(board);
+  const dragOrigin = useRef<{ columnId: number; position: number } | null>(null);
+  boardRef.current = board;
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
   );
 
   useEffect(() => {
@@ -75,33 +77,51 @@ export default function Board({ initial }: BoardProps) {
     if (!board) return;
     const taskId = parseTaskDragId(String(event.active.id));
     if (taskId === null) return;
-    setActiveTask(findTask(board, taskId) ?? null);
+    const task = findTask(board, taskId);
+    if (!task) return;
+    const column = board.columns.find((item) => item.id === task.column_id);
+    dragOrigin.current = {
+      columnId: task.column_id,
+      position: column?.tasks.findIndex((item) => item.id === taskId) ?? task.position,
+    };
+    setActiveTask(task);
   }
 
   function handleDragOver(event: DragOverEvent): void {
-    if (!board || !event.over) return;
+    if (!event.over) return;
     const taskId = parseTaskDragId(String(event.active.id));
     if (taskId === null) return;
+    const overId = String(event.over.id);
+    if (overId === String(event.active.id)) return;
 
-    const dest = dropIndex(board, taskId, String(event.over.id));
-    if (!dest) return;
-
-    const current = findTask(board, taskId);
-    if (!current) return;
-    const sourceColumn = board.columns.find((column) => column.id === current.column_id);
-    const visualIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
-    if (dest.columnId === current.column_id && dest.position === visualIndex) return;
-
-    setBoard(moveTask(board, taskId, dest.columnId, dest.position));
+    setBoard((currentBoard) => {
+      if (!currentBoard) return currentBoard;
+      const dest = dropIndex(currentBoard, taskId, overId);
+      if (!dest) return currentBoard;
+      const current = findTask(currentBoard, taskId);
+      if (!current) return currentBoard;
+      const sourceColumn = currentBoard.columns.find((column) => column.id === current.column_id);
+      const visualIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
+      if (dest.columnId === current.column_id && dest.position === visualIndex) {
+        return currentBoard;
+      }
+      return moveTask(currentBoard, taskId, dest.columnId, dest.position);
+    });
   }
 
   async function handleDragEnd(): Promise<void> {
     const dragging = activeTask;
+    const origin = dragOrigin.current;
     setActiveTask(null);
-    if (!board || !dragging) return;
+    dragOrigin.current = null;
+    const latest = boardRef.current;
+    if (!latest || !dragging || !origin) return;
 
-    const current = findTask(board, dragging.id);
+    const current = findTask(latest, dragging.id);
     if (!current) return;
+    if (current.column_id === origin.columnId && current.position === origin.position) {
+      return;
+    }
 
     try {
       await updateTask(dragging.id, {
@@ -137,7 +157,7 @@ export default function Board({ initial }: BoardProps) {
       {board ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={boardCollision}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={() => void handleDragEnd()}
