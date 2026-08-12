@@ -1,19 +1,43 @@
 "use client";
 
-import type { Column, Task } from "@tmb/shared";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { Task } from "@tmb/shared";
+import { taskDragId } from "@/lib/dnd";
 
 interface TaskCardProps {
   task: Task;
-  columns: Column[];
-  onMove: (taskId: number, columnId: number) => Promise<void>;
   onDelete: (taskId: number) => Promise<void>;
 }
 
-export default function TaskCard({ task, columns, onMove, onDelete }: TaskCardProps) {
+export default function TaskCard({ task, onDelete }: TaskCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: taskDragId(task.id),
+    data: { type: "task", task },
+  });
+
   return (
-    <article className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+    <article
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`rounded-xl border border-stone-200 bg-white p-3 shadow-sm ${
+        isDragging ? "z-10 opacity-60 ring-2 ring-teal-700/30" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-stone-900">{task.title}</h3>
+        <button
+          type="button"
+          className="mt-0.5 cursor-grab touch-none text-stone-300 hover:text-stone-500 active:cursor-grabbing"
+          aria-label={`Drag ${task.title}`}
+          {...attributes}
+          {...listeners}
+        >
+          ⋮⋮
+        </button>
+        <h3 className="flex-1 text-sm font-semibold text-stone-900">{task.title}</h3>
         <button
           type="button"
           onClick={() => {
@@ -27,25 +51,8 @@ export default function TaskCard({ task, columns, onMove, onDelete }: TaskCardPr
       </div>
 
       {task.description ? (
-        <p className="mt-1 text-xs leading-5 text-stone-500">{task.description}</p>
+        <p className="mt-1 pl-6 text-xs leading-5 text-stone-500">{task.description}</p>
       ) : null}
-
-      <label className="mt-3 block text-[11px] font-medium uppercase tracking-wide text-stone-400">
-        Move to
-        <select
-          className="mt-1 w-full rounded-md border border-stone-200 bg-stone-50 px-2 py-1.5 text-xs text-stone-700 outline-none focus:border-teal-600"
-          value={task.column_id}
-          onChange={(event) => {
-            void onMove(task.id, Number(event.target.value));
-          }}
-        >
-          {columns.map((column) => (
-            <option key={column.id} value={column.id}>
-              {column.name}
-            </option>
-          ))}
-        </select>
-      </label>
     </article>
   );
 }

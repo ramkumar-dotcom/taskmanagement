@@ -60,6 +60,7 @@ export interface UpdateTaskRequest {
   title?: string;
   description?: string;
   columnId?: number;
+  position?: number;
 }
 
 export interface BoardHealthState {

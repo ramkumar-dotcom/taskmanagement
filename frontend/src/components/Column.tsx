@@ -1,6 +1,9 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { ColumnWithTasks, CreateTaskRequest } from "@tmb/shared";
+import { columnDragId, taskDragId } from "@/lib/dnd";
 import AddTaskForm from "./AddTaskForm";
 import TaskCard from "./TaskCard";
 
@@ -13,25 +16,22 @@ const ACCENTS = [
 interface ColumnProps {
   column: ColumnWithTasks;
   index: number;
-  columns: ColumnWithTasks[];
   onCreate: (input: CreateTaskRequest) => Promise<void>;
-  onMove: (taskId: number, columnId: number) => Promise<void>;
   onDelete: (taskId: number) => Promise<void>;
 }
 
-export default function Column({
-  column,
-  index,
-  columns,
-  onCreate,
-  onMove,
-  onDelete,
-}: ColumnProps) {
+export default function Column({ column, index, onCreate, onDelete }: ColumnProps) {
   const accent = ACCENTS[index % ACCENTS.length];
+  const { setNodeRef, isOver } = useDroppable({
+    id: columnDragId(column.id),
+    data: { type: "column", columnId: column.id },
+  });
 
   return (
     <section
-      className={`flex min-h-[28rem] flex-col rounded-2xl border border-stone-200 border-t-4 bg-stone-100/80 p-4 ${accent}`}
+      className={`flex min-h-[28rem] flex-col rounded-2xl border border-stone-200 border-t-4 bg-stone-100/80 p-4 ${accent} ${
+        isOver ? "ring-2 ring-teal-700/20" : ""
+      }`}
     >
       <header className="mb-3 flex items-baseline justify-between">
         <h2 className="text-sm font-semibold tracking-wide text-stone-800">
@@ -42,16 +42,20 @@ export default function Column({
         </span>
       </header>
 
-      <div className="flex flex-1 flex-col gap-3">
-        {column.tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            columns={columns}
-            onMove={onMove}
-            onDelete={onDelete}
-          />
-        ))}
+      <div ref={setNodeRef} className="flex flex-1 flex-col gap-3">
+        <SortableContext
+          items={column.tasks.map((task) => taskDragId(task.id))}
+          strategy={verticalListSortingStrategy}
+        >
+          {column.tasks.map((task) => (
+            <TaskCard key={task.id} task={task} onDelete={onDelete} />
+          ))}
+        </SortableContext>
+        {column.tasks.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400">
+            Drop a card here
+          </p>
+        ) : null}
       </div>
 
       <AddTaskForm columnId={column.id} onCreated={onCreate} />

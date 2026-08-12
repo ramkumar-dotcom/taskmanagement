@@ -19,6 +19,7 @@ interface UpdateTaskBody {
   title?: unknown;
   description?: unknown;
   columnId?: unknown;
+  position?: unknown;
 }
 
 function badRequest(res: Response, message: string): void {
@@ -123,7 +124,10 @@ router.patch(
       updates.push(`column_id = $${values.length}`);
     }
 
-    if (updates.length === 0) {
+    const moving =
+      req.body.columnId !== undefined || req.body.position !== undefined;
+
+    if (updates.length === 0 && !moving) {
       badRequest(res, "nothing to update");
       return;
     }
@@ -132,6 +136,74 @@ router.patch(
     values.push(id);
 
     try {
+      if (moving) {
+        const current = await query<Task>(
+          "SELECT id, column_id, title, description, position, created_at FROM tasks WHERE id = $1",
+          [id],
+        );
+        const task = current.rows[0];
+        if (!task) {
+          res.status(404).json({ error: "task not found" });
+          return;
+        }
+
+        const destColumnId =
+          req.body.columnId !== undefined ? Number(req.body.columnId) : task.column_id;
+        const destColumn = await query<{ id: number }>("SELECT id FROM columns WHERE id = $1", [
+          destColumnId,
+        ]);
+        if (destColumn.rows.length === 0) {
+          badRequest(res, "column does not exist");
+          return;
+        }
+
+        const siblings = await query<Task>(
+          `SELECT id, column_id, title, description, position, created_at
+           FROM tasks
+           WHERE column_id = $1 AND id <> $2
+           ORDER BY position ASC, id ASC`,
+          [destColumnId, id],
+        );
+        let insertAt = siblings.rows.length;
+        if (req.body.position !== undefined) {
+          const requested = Number(req.body.position);
+          if (!Number.isInteger(requested) || requested < 0) {
+            badRequest(res, "position must be a non-negative integer");
+            return;
+          }
+          insertAt = Math.min(requested, siblings.rows.length);
+        }
+        const ordered = [...siblings.rows];
+        ordered.splice(insertAt, 0, { ...task, column_id: destColumnId });
+
+        for (const [index, item] of ordered.entries()) {
+          await query(
+            `UPDATE tasks SET column_id = $1, position = $2, updated_at = ${nowSql()} WHERE id = $3`,
+            [destColumnId, index, item.id],
+          );
+        }
+
+        if (task.column_id !== destColumnId) {
+          const leftover = await query<Task>(
+            `SELECT id FROM tasks WHERE column_id = $1 ORDER BY position ASC, id ASC`,
+            [task.column_id],
+          );
+          for (const [index, item] of leftover.rows.entries()) {
+            await query(`UPDATE tasks SET position = $1, updated_at = ${nowSql()} WHERE id = $2`, [
+              index,
+              item.id,
+            ]);
+          }
+        }
+
+        const result = await query<Task>(
+          "SELECT id, column_id, title, description, position, created_at FROM tasks WHERE id = $1",
+          [id],
+        );
+        res.json(result.rows[0]);
+        return;
+      }
+
       const result = await query<Task>(
         `UPDATE tasks
          SET ${updates.join(", ")}
