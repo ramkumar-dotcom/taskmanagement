@@ -93,7 +93,7 @@ Add a card, refresh — it should still be there (it is in Neon).
 | --- | --- |
 | Build error: `No Output Directory named "public"` | The API is not a static site. In the **API** project: Framework = Express, Build Command empty, Output Directory empty. Redeploy `main`. |
 | Health `database: disconnected` | Wrong password, or you used the non-pooled URL. Copy again from Neon. |
-| Frontend “Cannot reach the API” | `NEXT_PUBLIC_API_URL` is wrong. It is baked in at **build** time — change it, then Redeploy the frontend. |
+| Frontend `Request failed (401)` | Vercel **Deployment Protection** is on. API project → Settings → Deployment Protection → turn **off** Vercel Authentication for Production. |
 | Browser console CORS error | `FRONTEND_ORIGIN` on the API does not exactly match the frontend origin. No trailing slash. Redeploy the API. |
 | Cards vanish after a while | API is still on SQLite. Neon `DATABASE_URL` is not set. |
 

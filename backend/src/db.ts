@@ -163,6 +163,17 @@ export async function ping(): Promise<void> {
   await query("SELECT 1");
 }
 
+async function execStatements(sql: string): Promise<void> {
+  const client = await getPostgres();
+  const statements = sql
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  for (const statement of statements) {
+    await client.query(statement);
+  }
+}
+
 export function nowSql(): string {
   return config.driver === "postgres" ? "NOW()" : "datetime('now')";
 }
@@ -185,12 +196,11 @@ export async function resetDatabase(): Promise<void> {
 
 async function migrate(): Promise<void> {
   if (config.driver === "postgres") {
-    const client = await getPostgres();
-    await client.query(postgresSchema);
+    await execStatements(postgresSchema);
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {
-      await client.query(seedSql);
-      await client.query(postgresSequenceFix);
+      await execStatements(seedSql);
+      await execStatements(postgresSequenceFix);
       console.log("Seeded sample board into Neon / Postgres");
     }
     return;
