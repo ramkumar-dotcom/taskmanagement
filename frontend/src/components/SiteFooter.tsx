@@ -1,6 +1,28 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { clearUser, readUser, type AuthUser } from "@/lib/auth";
 
 export default function SiteFooter() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    function sync() {
+      setUser(readUser());
+    }
+    sync();
+    window.addEventListener("tmb-auth", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("tmb-auth", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
   return (
     <footer className="border-t border-stone-200 bg-stone-900 text-stone-300">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4">
@@ -20,37 +42,62 @@ export default function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/board" className="hover:text-white">
-                Live board
-              </Link>
-            </li>
-            <li>
-              <Link href="/register" className="hover:text-white">
-                Get started
-              </Link>
+              {user ? (
+                pathname === "/board" ? (
+                  <span className="text-stone-500">You are on the board</span>
+                ) : (
+                  <Link href="/board" className="hover:text-white">
+                    Open board
+                  </Link>
+                )
+              ) : (
+                <Link href="/board" className="hover:text-white">
+                  Live board
+                </Link>
+              )}
             </li>
           </ul>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Account</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <Link href="/login" className="hover:text-white">
-                Login
-              </Link>
-            </li>
-            <li>
-              <Link href="/register" className="hover:text-white">
-                Register
-              </Link>
-            </li>
+            {user ? (
+              <>
+                <li className="text-stone-400">{user.name}</li>
+                <li>
+                  <button
+                    type="button"
+                    className="hover:text-white"
+                    onClick={() => {
+                      clearUser();
+                      router.replace("/");
+                    }}
+                  >
+                    Log out
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link href="/login" className="hover:text-white">
+                    Login
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/register" className="hover:text-white">
+                    Register
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </div>
       <div className="border-t border-stone-800">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-stone-500 sm:flex-row sm:justify-between">
           <p>© {new Date().getFullYear()} Task Management Board. All rights reserved.</p>
-          <p>Next.js · Node · Neon Postgres · Vercel</p>
+          <p>Built for getting work done</p>
         </div>
       </div>
     </footer>
