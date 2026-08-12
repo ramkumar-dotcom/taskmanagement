@@ -6,6 +6,7 @@ import { describeError } from "./db";
 import healthRoutes from "./routes/health";
 import boardRoutes from "./routes/board";
 import taskRoutes from "./routes/tasks";
+import authRoutes from "./routes/auth";
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use(express.json());
 // Health must not wait on a database migrate — that is what made
 // /api/health spin forever on Vercel when Neon/SQLite failed to open.
 app.use("/api", healthRoutes);
+app.use("/api", authRoutes);
 app.use("/api", boardRoutes);
 app.use("/api", taskRoutes);
 

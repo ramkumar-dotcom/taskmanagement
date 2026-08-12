@@ -110,3 +110,19 @@ export function parseBoard(value: unknown): BoardWithColumns {
 export function parseTaskResponse(value: unknown): Task {
   return parseTask(value);
 }
+
+export function parsePublicUser(value: unknown): {
+  id: number;
+  name: string;
+  email: string;
+} {
+  if (
+    isRecord(value) &&
+    typeof value.name === "string" &&
+    typeof value.email === "string" &&
+    (typeof value.id === "number" || typeof value.id === "string")
+  ) {
+    return { id: Number(value.id), name: value.name, email: value.email };
+  }
+  throw new Error("Account response had an unexpected shape");
+}

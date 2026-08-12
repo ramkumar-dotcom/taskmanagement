@@ -9,10 +9,19 @@ import type {
   BoardWithColumns,
   CreateTaskRequest,
   HealthResponse,
+  LoginRequest,
+  PublicUser,
+  RegisterRequest,
   Task,
   UpdateTaskRequest,
 } from "@tmb/shared";
-import { getApiErrorMessage, parseBoard, parseHealth, parseTaskResponse } from "./parse";
+import {
+  getApiErrorMessage,
+  parseBoard,
+  parseHealth,
+  parsePublicUser,
+  parseTaskResponse,
+} from "./parse";
 
 const PRODUCTION_API = "https://taskmanagement-9qrq.vercel.app";
 
@@ -86,4 +95,22 @@ export async function updateTask(id: number, body: UpdateTaskRequest): Promise<T
 
 export async function deleteTask(id: number): Promise<void> {
   await request(`/api/tasks/${id}`, { method: "DELETE" });
+}
+
+export async function registerAccount(body: RegisterRequest): Promise<PublicUser> {
+  return parsePublicUser(
+    await request("/api/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+export async function loginAccount(body: LoginRequest): Promise<PublicUser> {
+  return parsePublicUser(
+    await request("/api/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  );
 }

@@ -72,3 +72,20 @@ export interface BoardPageData {
   health: BoardHealthState;
   error: string;
 }
+
+export interface PublicUser {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}

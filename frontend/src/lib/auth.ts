@@ -1,4 +1,5 @@
 export interface AuthUser {
+  id: number;
   name: string;
   email: string;
 }
@@ -19,7 +20,8 @@ export function readUser(): AuthUser | null {
       typeof parsed.name === "string" &&
       typeof parsed.email === "string"
     ) {
-      return { name: parsed.name, email: parsed.email };
+      const id = "id" in parsed ? Number(parsed.id) : 0;
+      return { id, name: parsed.name, email: parsed.email };
     }
   } catch {
     return null;
