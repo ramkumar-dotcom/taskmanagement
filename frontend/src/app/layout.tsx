@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Task Management Board",
-  description: "Kanban board boilerplate — Next.js, Node, SQLite, Tailwind CSS, TypeScript",
+  description: "A focused kanban board. Add tasks, move them, get them done.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
