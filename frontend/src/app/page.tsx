@@ -61,9 +61,9 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-3 gap-3 rounded-3xl border border-stone-200 bg-stone-100/80 p-4 shadow-sm">
           {[
-            { name: "To Do", tint: "border-t-stone-400", cards: ["Read the brief", "Set up board"] },
-            { name: "In Progress", tint: "border-t-amber-400", cards: ["Draft landing"] },
-            { name: "Done", tint: "border-t-teal-600", cards: ["Create project"] },
+            { name: "To Do", tint: "border-t-stone-400" },
+            { name: "In Progress", tint: "border-t-amber-400" },
+            { name: "Done", tint: "border-t-teal-600" },
           ].map((col) => (
             <div
               key={col.name}
@@ -72,15 +72,8 @@ export default function LandingPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
                 {col.name}
               </p>
-              <div className="mt-3 space-y-2">
-                {col.cards.map((card) => (
-                  <div
-                    key={card}
-                    className="rounded-lg border border-stone-200 bg-white px-2 py-2 text-xs font-medium text-stone-800 shadow-sm"
-                  >
-                    {card}
-                  </div>
-                ))}
+              <div className="mt-6 rounded-lg border border-dashed border-stone-200 bg-white/60 px-2 py-6 text-center text-[11px] text-stone-400">
+                Empty
               </div>
             </div>
           ))}

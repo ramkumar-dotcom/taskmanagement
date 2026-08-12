@@ -87,14 +87,16 @@ VALUES
   (2, 1, 'In Progress', 1),
   (3, 1, 'Done', 2)
 ON CONFLICT (id) DO NOTHING;
+`;
 
-INSERT INTO tasks (id, column_id, title, description, position)
-VALUES
-  (1, 1, 'Read the README', 'Open README.md — it explains the 3 pieces.', 0),
-  (2, 1, 'Add another task', 'Type in the box under To Do and click Add task.', 1),
-  (3, 2, 'Explore the API', 'Open /api/health to see if the database is connected.', 0),
-  (4, 3, 'Create the project folder', 'You are set up — add your own cards next.', 0)
-ON CONFLICT (id) DO NOTHING;
+export const removeDemoTasksSql = `
+DELETE FROM tasks WHERE title IN (
+  'Read the README',
+  'Add another task',
+  'Explore the API',
+  'Create the project folder',
+  'Start the database'
+);
 `;
 
 export const postgresSequenceFix = `

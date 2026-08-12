@@ -11,6 +11,7 @@ import { config } from "./config";
 import {
   postgresSchema,
   postgresSequenceFix,
+  removeDemoTasksSql,
   seedSql,
   sqliteSchema,
 } from "./sql-scripts";
@@ -201,8 +202,9 @@ async function migrate(): Promise<void> {
     if (Number(count.rows[0]?.n ?? 0) === 0) {
       await execStatements(seedSql);
       await execStatements(postgresSequenceFix);
-      console.log("Seeded sample board into Neon / Postgres");
+      console.log("Seeded empty board into Neon / Postgres");
     }
+    await execStatements(removeDemoTasksSql);
     return;
   }
 
@@ -210,8 +212,9 @@ async function migrate(): Promise<void> {
   const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
   if (Number(count.rows[0]?.n ?? 0) === 0) {
     getSqlite().exec(seedSql);
-    console.log("Seeded sample board into", config.databasePath);
+    console.log("Seeded empty board into", config.databasePath);
   }
+  getSqlite().exec(removeDemoTasksSql);
 }
 
 export function ensureDatabase(): Promise<void> {
