@@ -2,14 +2,13 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { ColumnWithTasks, CreateTaskRequest, TaskLabel, TaskPriority } from "@tmb/shared";
+import type { ColumnWithTasks, TaskLabel, TaskPriority } from "@tmb/shared";
 import { isInProgressColumnName } from "@/lib/columns";
 import type { DateFilterField } from "@/lib/dates";
 import { taskMatchesDateFilter } from "@/lib/dates";
 import { columnDragId, taskDragId } from "@/lib/dnd";
 import { taskMatchesSearch } from "@/lib/labels";
 import { sortTasks, type TaskSort } from "@/lib/priority";
-import AddTaskForm from "./AddTaskForm";
 import TaskCard from "./TaskCard";
 
 const ACCENTS = [
@@ -21,7 +20,6 @@ const ACCENTS = [
 interface ColumnProps {
   column: ColumnWithTasks;
   index: number;
-  onCreate: (input: CreateTaskRequest) => Promise<void>;
   onDelete: (taskId: number) => Promise<void>;
   onEdit: (
     taskId: number,
@@ -47,7 +45,6 @@ interface ColumnProps {
 export default function Column({
   column,
   index,
-  onCreate,
   onDelete,
   onEdit,
   dateFrom,
@@ -134,8 +131,6 @@ export default function Column({
           </p>
         ) : null}
       </div>
-
-      <AddTaskForm columnId={column.id} columnName={column.name} onCreated={onCreate} />
     </section>
   );
 }

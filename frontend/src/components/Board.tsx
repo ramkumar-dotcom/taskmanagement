@@ -22,6 +22,7 @@ import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "
 import type { TaskSort } from "@/lib/priority";
 import { errorMessage } from "@/lib/parse";
 import { DEFAULT_WIP_LIMIT, readWipLimit, saveWipLimit } from "@/lib/wip";
+import AddTaskForm from "./AddTaskForm";
 import BoardSwitcher from "./BoardSwitcher";
 import Column from "./Column";
 import DateRangeFilter from "./DateRangeFilter";
@@ -225,6 +226,11 @@ export default function Board({ initial }: BoardProps) {
           }}
           onCreate={handleCreateBoard}
         />
+      </div>
+
+      {board ? <AddTaskForm columns={board.columns} onCreated={handleCreate} /> : null}
+
+      <div className="mb-6 flex flex-col gap-4">
         <label className="block text-sm">
           <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Search
@@ -331,7 +337,6 @@ export default function Board({ initial }: BoardProps) {
                 key={column.id}
                 column={column}
                 index={index}
-                onCreate={handleCreate}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 dateFrom={dateFrom}
