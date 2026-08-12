@@ -345,7 +345,7 @@ export default function Board({ initial }: BoardProps) {
         </p>
       </header>
 
-      <div className="mb-6 flex flex-col gap-4">
+      <div className="mb-6 flex flex-wrap items-end gap-3">
         <BoardSwitcher
           boards={boards}
           selectedId={selectedId}
@@ -355,9 +355,8 @@ export default function Board({ initial }: BoardProps) {
           onCreate={handleCreateBoard}
           onDuplicate={handleDuplicateBoard}
         />
+        {board ? <AddTaskForm columns={board.columns} onCreated={handleCreate} /> : null}
       </div>
-
-      {board ? <AddTaskForm columns={board.columns} onCreated={handleCreate} /> : null}
 
       <div className="mb-6 flex flex-col gap-4">
         <label className="block text-sm">
