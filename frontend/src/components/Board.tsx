@@ -15,11 +15,13 @@ import { useEffect, useRef, useState } from "react";
 import type { BoardPageData, CreateTaskRequest, Task, TaskLabel, TaskPriority } from "@tmb/shared";
 import { createBoard, createTask, deleteTask, getBoard, listBoards, updateTask } from "@/lib/api";
 import { readSelectedBoardId, readUser, saveSelectedBoardId } from "@/lib/auth";
+import { isInProgressColumnName } from "@/lib/columns";
 import { taskMatchesDateFilter, type DateFilterField } from "@/lib/dates";
 import { taskMatchesSearch } from "@/lib/labels";
 import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
 import type { TaskSort } from "@/lib/priority";
 import { errorMessage } from "@/lib/parse";
+import { DEFAULT_WIP_LIMIT, readWipLimit, saveWipLimit } from "@/lib/wip";
 import BoardSwitcher from "./BoardSwitcher";
 import Column from "./Column";
 import DateRangeFilter from "./DateRangeFilter";
@@ -47,6 +49,7 @@ export default function Board({ initial }: BoardProps) {
   const [dateField, setDateField] = useState<DateFilterField>("column");
   const [sort, setSort] = useState<TaskSort>("board");
   const [search, setSearch] = useState("");
+  const [wipLimit, setWipLimit] = useState(DEFAULT_WIP_LIMIT);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
   const dragOrigin = useRef<{ columnId: number; position: number } | null>(null);
@@ -56,6 +59,7 @@ export default function Board({ initial }: BoardProps) {
   );
 
   useEffect(() => {
+    setWipLimit(readWipLimit());
     void load();
   }, []);
 
@@ -195,6 +199,9 @@ export default function Board({ initial }: BoardProps) {
     }
   }
 
+  const inProgressCount =
+    board?.columns.find((column) => isInProgressColumnName(column.name))?.tasks.length ?? 0;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <header className="mb-8">
@@ -281,8 +288,27 @@ export default function Board({ initial }: BoardProps) {
               <option value="priority-asc">Priority: low to high</option>
             </select>
           </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
+              In progress limit
+            </span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={wipLimit}
+              onChange={(event) => setWipLimit(saveWipLimit(Number(event.target.value)))}
+              className="w-24 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            />
+          </label>
         </div>
       </div>
+
+      {inProgressCount > wipLimit ? (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+          In Progress has {inProgressCount} cards (limit {wipLimit}). Finish or move some before starting more.
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
@@ -314,6 +340,7 @@ export default function Board({ initial }: BoardProps) {
                 sort={sort}
                 search={search}
                 onLabelClick={(label) => setSearch(label)}
+                wipLimit={wipLimit}
               />
             ))}
           </div>

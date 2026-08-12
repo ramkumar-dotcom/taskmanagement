@@ -3,6 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { ColumnWithTasks, CreateTaskRequest, TaskLabel, TaskPriority } from "@tmb/shared";
+import { isInProgressColumnName } from "@/lib/columns";
 import type { DateFilterField } from "@/lib/dates";
 import { taskMatchesDateFilter } from "@/lib/dates";
 import { columnDragId, taskDragId } from "@/lib/dnd";
@@ -40,6 +41,7 @@ interface ColumnProps {
   sort: TaskSort;
   search: string;
   onLabelClick: (label: TaskLabel) => void;
+  wipLimit: number;
 }
 
 export default function Column({
@@ -54,6 +56,7 @@ export default function Column({
   sort,
   search,
   onLabelClick,
+  wipLimit,
 }: ColumnProps) {
   const accent = ACCENTS[index % ACCENTS.length];
   const { setNodeRef, isOver } = useDroppable({
@@ -69,21 +72,40 @@ export default function Column({
     sort,
   );
   const filterActive = Boolean(dateFrom || dateTo || search.trim());
+  const inProgress = isInProgressColumnName(column.name);
+  const overWip = inProgress && column.tasks.length > wipLimit;
 
   return (
     <section
-      className={`flex min-h-[28rem] flex-col rounded-2xl border border-stone-200 border-t-4 bg-stone-100/80 p-4 dark:border-stone-700 dark:bg-stone-900/80 ${accent} ${
-        isOver ? "ring-2 ring-teal-500/30" : ""
-      }`}
+      className={`flex min-h-[28rem] flex-col rounded-2xl border border-t-4 bg-stone-100/80 p-4 ${accent} ${
+        overWip
+          ? "border-amber-300 dark:border-amber-800"
+          : "border-stone-200 dark:border-stone-700"
+      } ${isOver ? "ring-2 ring-teal-500/30" : ""} ${overWip ? "dark:bg-amber-950/20" : "dark:bg-stone-900/80"}`}
     >
       <header className="mb-3 flex items-baseline justify-between">
         <h2 className="text-sm font-semibold tracking-wide text-stone-800 dark:text-stone-100">
           {column.name}
         </h2>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs text-stone-500 dark:bg-stone-800 dark:text-stone-400">
-          {filterActive ? `${visibleTasks.length}/${column.tasks.length}` : column.tasks.length}
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs ${
+            overWip
+              ? "bg-amber-100 font-medium text-amber-900 dark:bg-amber-900 dark:text-amber-100"
+              : "bg-white text-stone-500 dark:bg-stone-800 dark:text-stone-400"
+          }`}
+        >
+          {inProgress
+            ? `${column.tasks.length}/${wipLimit}`
+            : filterActive
+              ? `${visibleTasks.length}/${column.tasks.length}`
+              : column.tasks.length}
         </span>
       </header>
+      {overWip ? (
+        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+          Too many cards in progress. Finish or move some before starting more.
+        </p>
+      ) : null}
 
       <div ref={setNodeRef} className="flex flex-1 flex-col gap-3">
         <SortableContext
