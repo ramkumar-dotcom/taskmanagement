@@ -5,6 +5,7 @@ import {
   type CollisionDetection,
 } from "@dnd-kit/core";
 import type { BoardWithColumns, Task } from "@tmb/shared";
+import { applyColumnMoveDates } from "./dates";
 
 export const boardCollision: CollisionDetection = (args) => {
   const pointerHits = pointerWithin(args);
@@ -60,7 +61,14 @@ export function moveTask(
 
   const nextTasks = [...dest.tasks];
   const insertAt = Math.max(0, Math.min(position, nextTasks.length));
-  nextTasks.splice(insertAt, 0, { ...task, column_id: columnId, position: insertAt });
+  const dates =
+    task.column_id === columnId ? {} : applyColumnMoveDates(task, dest.name);
+  nextTasks.splice(insertAt, 0, {
+    ...task,
+    ...dates,
+    column_id: columnId,
+    position: insertAt,
+  });
   dest.tasks = nextTasks.map((item, index) => ({ ...item, position: index }));
   return { ...board, columns };
 }

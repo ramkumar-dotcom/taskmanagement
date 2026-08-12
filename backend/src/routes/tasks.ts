@@ -63,6 +63,29 @@ function isInProgressName(name: string): boolean {
   return name.trim().toLowerCase() === "in progress";
 }
 
+function applyColumnMoveDates(
+  task: Pick<Task, "start_date" | "completed_date">,
+  destColumnName: string,
+): Pick<Task, "start_date" | "completed_date"> {
+  const dest = destColumnName.trim().toLowerCase();
+  if (dest === "to do") {
+    return { start_date: null, completed_date: null };
+  }
+  if (dest === "in progress") {
+    return {
+      start_date: task.start_date ?? todayDate(),
+      completed_date: null,
+    };
+  }
+  if (dest === "done") {
+    return {
+      start_date: task.start_date,
+      completed_date: task.completed_date ?? todayDate(),
+    };
+  }
+  return { start_date: task.start_date, completed_date: task.completed_date };
+}
+
 // POST /api/tasks
 // Body: { title, description?, columnId }
 router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res) => {
@@ -302,14 +325,15 @@ router.patch(
           }
 
           const destName = destColumn.rows[0]?.name ?? "";
+          const nextDates = applyColumnMoveDates(task, destName);
           const dateUpdates: string[] = [];
           const dateValues: SqlValue[] = [];
-          if (isInProgressName(destName) && !task.start_date) {
-            dateValues.push(todayDate());
+          if (nextDates.start_date !== task.start_date) {
+            dateValues.push(nextDates.start_date);
             dateUpdates.push(`start_date = $${dateValues.length}`);
           }
-          if (isDoneName(destName) && !task.completed_date) {
-            dateValues.push(todayDate());
+          if (nextDates.completed_date !== task.completed_date) {
+            dateValues.push(nextDates.completed_date);
             dateUpdates.push(`completed_date = $${dateValues.length}`);
           }
           if (dateUpdates.length > 0) {

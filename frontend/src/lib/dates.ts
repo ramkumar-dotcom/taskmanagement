@@ -43,6 +43,37 @@ function dateForKind(task: Task, kind: ColumnDateKind): string | null {
   return task.completed_date;
 }
 
+export function todayIsoDate(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+export function applyColumnMoveDates(
+  task: Pick<Task, "start_date" | "completed_date">,
+  destColumnName: string,
+  today: string = todayIsoDate(),
+): Pick<Task, "start_date" | "completed_date"> {
+  const dest = destColumnName.trim().toLowerCase();
+  if (dest === "to do") {
+    return { start_date: null, completed_date: null };
+  }
+  if (dest === "in progress") {
+    return {
+      start_date: task.start_date ?? today,
+      completed_date: null,
+    };
+  }
+  if (dest === "done") {
+    return {
+      start_date: task.start_date,
+      completed_date: task.completed_date ?? today,
+    };
+  }
+  return { start_date: task.start_date, completed_date: task.completed_date };
+}
+
 export function taskMatchesDateFilter(
   task: Task,
   columnName: string,
