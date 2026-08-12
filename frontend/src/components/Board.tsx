@@ -8,7 +8,6 @@ import {
   defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
-  type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
   type DropAnimation,
