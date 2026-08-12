@@ -57,14 +57,13 @@ export default function Board({ initial }: BoardProps) {
       <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800">
-            Boilerplate
+            Workspace
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-stone-900">
             Task Management Board
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-500">
-            Next.js talks to a Node API, and the API talks to a SQLite file.
-            Add, move, and delete cards — they persist in the database.
+            Add a card, move it across columns, and check it off when it&apos;s done.
           </p>
         </div>
         <div

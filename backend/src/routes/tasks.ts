@@ -1,5 +1,5 @@
 // Task routes — create, move, delete.
-// These are the only write operations the boilerplate needs.
+// These are the write operations the board needs.
 
 import { Router } from "express";
 import type { Request, Response } from "express";

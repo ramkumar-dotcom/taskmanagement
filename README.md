@@ -136,7 +136,7 @@ Short version:
 
 ---
 
-## What this boilerplate is not (yet)
+## What this app is not (yet)
 
 No login, no drag-and-drop, no multiple boards, no file uploads. Those come next, once this loop feels familiar:
 

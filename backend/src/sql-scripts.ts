@@ -93,7 +93,7 @@ VALUES
   (1, 1, 'Read the README', 'Open README.md — it explains the 3 pieces.', 0),
   (2, 1, 'Add another task', 'Type in the box under To Do and click Add task.', 1),
   (3, 2, 'Explore the API', 'Open /api/health to see if the database is connected.', 0),
-  (4, 3, 'Create the project folder', 'Boilerplate is already here — you did it.', 0)
+  (4, 3, 'Create the project folder', 'You are set up — add your own cards next.', 0)
 ON CONFLICT (id) DO NOTHING;
 `;
 
