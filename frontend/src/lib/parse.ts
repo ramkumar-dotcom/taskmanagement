@@ -155,6 +155,21 @@ export function parseBoardList(value: unknown): { id: number; name: string; crea
   return value.map(parseBoardSummary);
 }
 
+export function parseColumnSummary(value: unknown): {
+  id: number;
+  board_id: number;
+  name: string;
+  position: number;
+} {
+  const id = isRecord(value) ? asId(value.id) : null;
+  const boardId = isRecord(value) ? asId(value.board_id) : null;
+  if (isRecord(value) && id !== null && boardId !== null && typeof value.name === "string") {
+    const position = asId(value.position) ?? 0;
+    return { id, board_id: boardId, name: value.name, position };
+  }
+  throw new Error("API returned a column with an unexpected shape");
+}
+
 export function parseTaskResponse(value: unknown): Task {
   return parseTask(value);
 }

@@ -66,3 +66,64 @@ export async function createBoardWithColumns(
   }
   return loaded;
 }
+
+export async function createColumn(boardId: number, name: string): Promise<Column> {
+  const board = await query<{ id: number }>("SELECT id FROM boards WHERE id = $1", [boardId]);
+  if (!board.rows[0]) {
+    throw new Error("Board not found.");
+  }
+  const positionResult = await query<{ next_position: number | string }>(
+    "SELECT COALESCE(MAX(position), -1) + 1 AS next_position FROM columns WHERE board_id = $1",
+    [boardId],
+  );
+  const nextPosition = Number(positionResult.rows[0]?.next_position ?? 0);
+  const created = await query<Column>(
+    `INSERT INTO columns (board_id, name, position)
+     VALUES ($1, $2, $3)
+     RETURNING id, board_id, name, position`,
+    [boardId, name, nextPosition],
+  );
+  const column = created.rows[0];
+  if (!column) {
+    throw new Error("Could not create the column.");
+  }
+  return column;
+}
+
+export async function updateColumn(
+  columnId: number,
+  fields: { name?: string; position?: number },
+): Promise<Column> {
+  const current = await query<Column>(
+    "SELECT id, board_id, name, position FROM columns WHERE id = $1",
+    [columnId],
+  );
+  const column = current.rows[0];
+  if (!column) {
+    throw new Error("Column not found.");
+  }
+
+  if (fields.name !== undefined && fields.name !== column.name) {
+    await query("UPDATE columns SET name = $1 WHERE id = $2", [fields.name, columnId]);
+    column.name = fields.name;
+  }
+
+  if (fields.position !== undefined && fields.position !== column.position) {
+    const siblings = await query<Column>(
+      `SELECT id, board_id, name, position
+       FROM columns
+       WHERE board_id = $1
+       ORDER BY position ASC, id ASC`,
+      [column.board_id],
+    );
+    const without = siblings.rows.filter((item) => item.id !== columnId);
+    const insertAt = Math.max(0, Math.min(fields.position, without.length));
+    without.splice(insertAt, 0, { ...column, name: fields.name ?? column.name });
+    for (const [index, item] of without.entries()) {
+      await query("UPDATE columns SET position = $1 WHERE id = $2", [index, item.id]);
+    }
+    column.position = insertAt;
+  }
+
+  return column;
+}

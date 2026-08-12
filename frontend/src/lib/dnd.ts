@@ -8,8 +8,16 @@ import type { BoardWithColumns, Task } from "@tmb/shared";
 import { applyColumnMoveDates } from "./dates";
 
 export const boardCollision: CollisionDetection = (args) => {
+  const activeId = String(args.active.id);
   const pointerHits = pointerWithin(args);
   const hits = pointerHits.length > 0 ? pointerHits : rectIntersection(args);
+
+  if (activeId.startsWith("sortcol-")) {
+    const overSort = hits.find((hit) => String(hit.id).startsWith("sortcol-"));
+    if (overSort) return [overSort];
+    return closestCorners(args);
+  }
+
   const overTask = hits.find((hit) => String(hit.id).startsWith("task-"));
   if (overTask) return [overTask];
   const overColumn = hits.find((hit) => String(hit.id).startsWith("column-"));
@@ -23,6 +31,15 @@ export function taskDragId(taskId: number): string {
 
 export function columnDragId(columnId: number): string {
   return `column-${columnId}`;
+}
+
+export function columnSortId(columnId: number): string {
+  return `sortcol-${columnId}`;
+}
+
+export function parseColumnSortId(id: string): number | null {
+  const match = /^sortcol-(\d+)$/.exec(id);
+  return match ? Number(match[1]) : null;
 }
 
 export function parseTaskDragId(id: string): number | null {
@@ -41,6 +58,24 @@ export function findTask(board: BoardWithColumns, taskId: number): Task | undefi
     if (task) return task;
   }
   return undefined;
+}
+
+export function moveColumn(
+  board: BoardWithColumns,
+  columnId: number,
+  toIndex: number,
+): BoardWithColumns {
+  const from = board.columns.findIndex((column) => column.id === columnId);
+  if (from < 0) return board;
+  const next = [...board.columns];
+  const [moved] = next.splice(from, 1);
+  if (!moved) return board;
+  const insertAt = Math.max(0, Math.min(toIndex, next.length));
+  next.splice(insertAt, 0, moved);
+  return {
+    ...board,
+    columns: next.map((column, index) => ({ ...column, position: index })),
+  };
 }
 
 export function moveTask(

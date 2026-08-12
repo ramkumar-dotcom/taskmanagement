@@ -5,6 +5,7 @@ import { config } from "./config";
 import { describeError } from "./db";
 import healthRoutes from "./routes/health";
 import boardRoutes from "./routes/board";
+import columnRoutes from "./routes/columns";
 import taskRoutes from "./routes/tasks";
 import authRoutes from "./routes/auth";
 
@@ -36,6 +37,7 @@ app.use(express.json());
 app.use("/api", healthRoutes);
 app.use("/api", authRoutes);
 app.use("/api", boardRoutes);
+app.use("/api", columnRoutes);
 app.use("/api", taskRoutes);
 
 app.get("/", (_req, res) => {

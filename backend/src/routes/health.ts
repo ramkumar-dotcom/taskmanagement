@@ -29,7 +29,7 @@ router.get("/health", async (_req, res) => {
       service: "task-management-board-api",
       database: "connected",
       driver: config.driver,
-      release: "task-labels-search",
+      release: "column-manage",
     };
     res.json(body);
   } catch (err) {

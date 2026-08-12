@@ -7,18 +7,21 @@
 
 import type {
   BoardWithColumns,
+  CreateColumnRequest,
   CreateTaskRequest,
   HealthResponse,
   LoginRequest,
   PublicUser,
   RegisterRequest,
   Task,
+  UpdateColumnRequest,
   UpdateTaskRequest,
 } from "@tmb/shared";
 import {
   getApiErrorMessage,
   parseBoard,
   parseBoardList,
+  parseColumnSummary,
   parseHealth,
   parsePublicUser,
   parseTaskResponse,
@@ -88,6 +91,32 @@ export async function createBoard(name: string, userId: number): Promise<BoardWi
     await request("/api/boards", {
       method: "POST",
       body: JSON.stringify({ name, userId }),
+    }),
+  );
+}
+
+export async function createColumn(body: CreateColumnRequest): Promise<{
+  id: number;
+  board_id: number;
+  name: string;
+  position: number;
+}> {
+  return parseColumnSummary(
+    await request("/api/columns", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+export async function updateColumn(
+  id: number,
+  body: UpdateColumnRequest,
+): Promise<{ id: number; board_id: number; name: string; position: number }> {
+  return parseColumnSummary(
+    await request(`/api/columns/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
     }),
   );
 }

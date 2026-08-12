@@ -71,6 +71,16 @@ export interface CreateTaskRequest {
   labels?: TaskLabel[];
 }
 
+export interface CreateColumnRequest {
+  boardId: number;
+  name: string;
+}
+
+export interface UpdateColumnRequest {
+  name?: string;
+  position?: number;
+}
+
 export interface UpdateTaskRequest {
   title?: string;
   description?: string;

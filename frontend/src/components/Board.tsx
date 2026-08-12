@@ -13,15 +13,35 @@ import {
 } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
 import type { BoardPageData, CreateTaskRequest, Task, TaskLabel, TaskPriority } from "@tmb/shared";
-import { createBoard, createTask, deleteTask, getBoard, listBoards, updateTask } from "@/lib/api";
+import {
+  createBoard,
+  createColumn,
+  createTask,
+  deleteTask,
+  getBoard,
+  listBoards,
+  updateColumn,
+  updateTask,
+} from "@/lib/api";
 import { readSelectedBoardId, readUser, saveSelectedBoardId } from "@/lib/auth";
 import { isInProgressColumnName } from "@/lib/columns";
 import { taskMatchesDateFilter, type DateFilterField } from "@/lib/dates";
 import { taskMatchesSearch } from "@/lib/labels";
-import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
+import {
+  boardCollision,
+  columnSortId,
+  dropIndex,
+  findTask,
+  moveColumn,
+  moveTask,
+  parseColumnSortId,
+  parseTaskDragId,
+} from "@/lib/dnd";
 import type { TaskSort } from "@/lib/priority";
 import { errorMessage } from "@/lib/parse";
 import { DEFAULT_WIP_LIMIT, readWipLimit, saveWipLimit } from "@/lib/wip";
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import AddColumnCard from "./AddColumnCard";
 import AddTaskForm from "./AddTaskForm";
 import BoardSwitcher from "./BoardSwitcher";
 import Column from "./Column";
@@ -54,6 +74,7 @@ export default function Board({ initial }: BoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
   const dragOrigin = useRef<{ columnId: number; position: number } | null>(null);
+  const columnDrag = useRef<{ id: number; from: number } | null>(null);
   boardRef.current = board;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
@@ -122,6 +143,27 @@ export default function Board({ initial }: BoardProps) {
     await load();
   }
 
+  async function handleCreateColumn(name: string): Promise<void> {
+    if (!board) throw new Error("No board selected.");
+    await createColumn({ boardId: board.id, name });
+    await load();
+  }
+
+  async function handleRenameColumn(columnId: number, name: string): Promise<void> {
+    await updateColumn(columnId, { name });
+    await load();
+  }
+
+  async function handleMoveColumn(columnId: number, position: number): Promise<void> {
+    setBoard((current) => (current ? moveColumn(current, columnId, position) : current));
+    try {
+      await updateColumn(columnId, { position });
+    } catch (err) {
+      setError(errorMessage(err));
+      await load();
+    }
+  }
+
   async function handleEdit(
     taskId: number,
     fields: {
@@ -140,6 +182,14 @@ export default function Board({ initial }: BoardProps) {
 
   function handleDragStart(event: DragStartEvent): void {
     if (!board) return;
+    const columnId = parseColumnSortId(String(event.active.id));
+    if (columnId !== null) {
+      columnDrag.current = {
+        id: columnId,
+        from: board.columns.findIndex((column) => column.id === columnId),
+      };
+      return;
+    }
     const taskId = parseTaskDragId(String(event.active.id));
     if (taskId === null) return;
     const task = findTask(board, taskId);
@@ -154,6 +204,20 @@ export default function Board({ initial }: BoardProps) {
 
   function handleDragOver(event: DragOverEvent): void {
     if (!event.over) return;
+    const draggedColumnId = parseColumnSortId(String(event.active.id));
+    if (draggedColumnId !== null) {
+      const overColumnId = parseColumnSortId(String(event.over.id));
+      if (overColumnId === null || overColumnId === draggedColumnId) return;
+      setBoard((currentBoard) => {
+        if (!currentBoard) return currentBoard;
+        const toIndex = currentBoard.columns.findIndex((column) => column.id === overColumnId);
+        if (toIndex < 0) return currentBoard;
+        const fromIndex = currentBoard.columns.findIndex((column) => column.id === draggedColumnId);
+        if (fromIndex === toIndex) return currentBoard;
+        return moveColumn(currentBoard, draggedColumnId, toIndex);
+      });
+      return;
+    }
     const taskId = parseTaskDragId(String(event.active.id));
     if (taskId === null) return;
     const overId = String(event.over.id);
@@ -175,6 +239,22 @@ export default function Board({ initial }: BoardProps) {
   }
 
   async function handleDragEnd(): Promise<void> {
+    const columnMove = columnDrag.current;
+    columnDrag.current = null;
+    if (columnMove) {
+      const latest = boardRef.current;
+      if (!latest) return;
+      const toIndex = latest.columns.findIndex((column) => column.id === columnMove.id);
+      if (toIndex < 0 || toIndex === columnMove.from) return;
+      try {
+        await updateColumn(columnMove.id, { position: toIndex });
+      } catch (err) {
+        setError(errorMessage(err));
+        await load();
+      }
+      return;
+    }
+
     const dragging = activeTask;
     const origin = dragOrigin.current;
     setActiveTask(null);
@@ -213,7 +293,7 @@ export default function Board({ initial }: BoardProps) {
           Task Management Board
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-stone-500 dark:text-stone-400">
-          Drag any card to another column or to a new spot in the list.
+          Drag cards between columns. Rename a column, drag its handle, or add a new one.
         </p>
       </header>
 
@@ -329,26 +409,39 @@ export default function Board({ initial }: BoardProps) {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={() => void handleDragEnd()}
-          onDragCancel={() => setActiveTask(null)}
+          onDragCancel={() => {
+            setActiveTask(null);
+            columnDrag.current = null;
+          }}
         >
-          <div className="grid gap-4 md:grid-cols-3">
-            {board.columns.map((column, index) => (
-              <Column
-                key={column.id}
-                column={column}
-                index={index}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                dateField={dateField}
-                sort={sort}
-                search={search}
-                onLabelClick={(label) => setSearch(label)}
-                wipLimit={wipLimit}
-              />
-            ))}
-          </div>
+          <SortableContext
+            items={board.columns.map((column) => columnSortId(column.id))}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {board.columns.map((column, index) => (
+                <Column
+                  key={column.id}
+                  column={column}
+                  index={index}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  dateFrom={dateFrom}
+                  dateTo={dateTo}
+                  dateField={dateField}
+                  sort={sort}
+                  search={search}
+                  onLabelClick={(label) => setSearch(label)}
+                  wipLimit={wipLimit}
+                  canMoveLeft={index > 0}
+                  canMoveRight={index < board.columns.length - 1}
+                  onRename={handleRenameColumn}
+                  onMove={handleMoveColumn}
+                />
+              ))}
+              <AddColumnCard onCreate={handleCreateColumn} />
+            </div>
+          </SortableContext>
           <DragOverlay dropAnimation={dropAnimation}>
             {activeTask ? <TaskCardFace task={activeTask} overlay /> : null}
           </DragOverlay>
