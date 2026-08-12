@@ -18,6 +18,8 @@ import {
   createColumn,
   createTask,
   deleteTask,
+  duplicateBoard,
+  duplicateTask,
   getBoard,
   listBoards,
   updateColumn,
@@ -121,6 +123,22 @@ export default function Board({ initial }: BoardProps) {
     } catch (err) {
       setError(errorMessage(err));
     }
+  }
+
+  async function handleDuplicateBoard(): Promise<void> {
+    const user = readUser();
+    if (!user) throw new Error("You need to log in.");
+    if (!board) throw new Error("No board selected.");
+    const created = await duplicateBoard(board.id, user.id);
+    saveSelectedBoardId(created.id);
+    setSelectedId(created.id);
+    setBoards((current) => [...current, { id: created.id, name: created.name, created_at: created.created_at }]);
+    setBoard(created);
+  }
+
+  async function handleDuplicateTask(taskId: number): Promise<void> {
+    await duplicateTask(taskId);
+    await load();
   }
 
   async function handleCreateBoard(name: string): Promise<void> {
@@ -305,6 +323,7 @@ export default function Board({ initial }: BoardProps) {
             void handleSelectBoard(boardId);
           }}
           onCreate={handleCreateBoard}
+          onDuplicate={handleDuplicateBoard}
         />
       </div>
 
@@ -425,6 +444,7 @@ export default function Board({ initial }: BoardProps) {
                   column={column}
                   index={index}
                   onDelete={handleDelete}
+                  onDuplicate={handleDuplicateTask}
                   onEdit={handleEdit}
                   dateFrom={dateFrom}
                   dateTo={dateTo}

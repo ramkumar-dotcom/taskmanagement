@@ -121,6 +121,19 @@ export async function updateColumn(
   );
 }
 
+export async function duplicateBoard(boardId: number, userId: number, name?: string): Promise<BoardWithColumns> {
+  return parseBoard(
+    await request(`/api/boards/${boardId}/duplicate`, {
+      method: "POST",
+      body: JSON.stringify({ userId, name }),
+    }),
+  );
+}
+
+export async function duplicateTask(id: number): Promise<Task> {
+  return parseTaskResponse(await request(`/api/tasks/${id}/duplicate`, { method: "POST" }));
+}
+
 export async function createTask(body: CreateTaskRequest): Promise<Task> {
   return parseTaskResponse(
     await request("/api/tasks", {

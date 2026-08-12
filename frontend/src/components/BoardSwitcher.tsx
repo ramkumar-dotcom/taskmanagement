@@ -12,6 +12,7 @@ interface BoardSwitcherProps {
   selectedId: number | null;
   onSelect: (boardId: number) => void;
   onCreate: (name: string) => Promise<void>;
+  onDuplicate: () => Promise<void>;
 }
 
 export default function BoardSwitcher({
@@ -19,10 +20,12 @@ export default function BoardSwitcher({
   selectedId,
   onSelect,
   onCreate,
+  onDuplicate,
 }: BoardSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [error, setError] = useState("");
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
@@ -95,13 +98,35 @@ export default function BoardSwitcher({
           </button>
         </form>
       ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-800"
-        >
-          New board
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-800"
+          >
+            New board
+          </button>
+          <button
+            type="button"
+            disabled={duplicating || selectedId === null}
+            onClick={() => {
+              void (async () => {
+                setDuplicating(true);
+                setError("");
+                try {
+                  await onDuplicate();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Could not duplicate board");
+                } finally {
+                  setDuplicating(false);
+                }
+              })();
+            }}
+            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-800"
+          >
+            {duplicating ? "Copying…" : "Duplicate board"}
+          </button>
+        </>
       )}
       {error ? <p className="w-full text-sm text-red-700 dark:text-red-400">{error}</p> : null}
     </div>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Board } from "@tmb/shared";
-import { createBoardWithColumns, loadBoardById } from "../board-service";
+import { createBoardWithColumns, duplicateBoard, loadBoardById } from "../board-service";
 import { describeError, ensureDatabase, query } from "../db";
 
 const router = Router();
@@ -65,6 +65,43 @@ router.post("/boards", async (req, res) => {
   } catch (err) {
     console.error("POST /api/boards failed:", err);
     res.status(500).json({ error: describeError(err) });
+  }
+});
+
+router.post("/boards/:id/duplicate", async (req, res) => {
+  const boardId = Number(req.params.id);
+  const userId = asUserId(req.body?.userId);
+  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  if (!Number.isInteger(boardId)) {
+    res.status(400).json({ error: "invalid board id" });
+    return;
+  }
+  if (!userId) {
+    res.status(400).json({ error: "userId is required." });
+    return;
+  }
+
+  try {
+    try {
+      await ensureDatabase();
+    } catch {
+      // continue
+    }
+    const user = await query<{ id: number }>("SELECT id FROM users WHERE id = $1", [userId]);
+    if (user.rows.length === 0) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+    const board = await duplicateBoard(boardId, userId, name || undefined);
+    res.status(201).json(board);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not duplicate the board.";
+    if (message === "Board not found.") {
+      res.status(404).json({ error: message });
+      return;
+    }
+    console.error("POST /api/boards/:id/duplicate failed:", err);
+    res.status(500).json({ error: "Could not duplicate the board." });
   }
 });
 

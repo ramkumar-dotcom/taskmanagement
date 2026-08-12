@@ -4,6 +4,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Task, TaskLabel, TaskPriority } from "@tmb/shared";
+import { duplicateTask } from "../board-service";
 import { ensureDatabase, nowSql, query } from "../db";
 import type { SqlValue } from "../db";
 
@@ -435,6 +436,28 @@ router.patch(
     }
   },
 );
+
+// POST /api/tasks/:id/duplicate
+router.post("/tasks/:id/duplicate", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    badRequest(res, "invalid task id");
+    return;
+  }
+
+  try {
+    const task = await duplicateTask(id);
+    res.status(201).json(task);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not duplicate the task.";
+    if (message === "Task not found.") {
+      res.status(404).json({ error: message });
+      return;
+    }
+    console.error("POST /api/tasks/:id/duplicate failed:", err);
+    res.status(500).json({ error: "Could not duplicate the task." });
+  }
+});
 
 // DELETE /api/tasks/:id
 router.delete("/tasks/:id", async (req, res) => {

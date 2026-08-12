@@ -27,6 +27,7 @@ interface TaskCardFaceProps {
   task: Task;
   columnName?: string;
   onDelete?: (taskId: number) => Promise<void>;
+  onDuplicate?: (taskId: number) => Promise<void>;
   onEdit?: (taskId: number, fields: TaskEditFields) => Promise<void>;
   onLabelClick?: (label: TaskLabel) => void;
   overlay?: boolean;
@@ -36,6 +37,7 @@ export function TaskCardFace({
   task,
   columnName,
   onDelete,
+  onDuplicate,
   onEdit,
   onLabelClick,
   overlay = false,
@@ -153,6 +155,19 @@ export function TaskCardFace({
       <div className="flex items-start justify-between gap-2 pl-1.5">
         <h3 className="flex-1 text-sm font-semibold text-stone-900 dark:text-stone-50">{task.title}</h3>
         <div className="flex items-center gap-0.5">
+          {onDuplicate ? (
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                void onDuplicate(task.id);
+              }}
+              className="rounded px-1.5 text-xs text-stone-400 transition hover:bg-stone-100 hover:text-teal-800 dark:hover:bg-stone-800 dark:hover:text-teal-300"
+              aria-label={`Duplicate ${task.title}`}
+            >
+              Copy
+            </button>
+          ) : null}
           {canEdit ? (
             <button
               type="button"
@@ -242,11 +257,19 @@ interface TaskCardProps {
   task: Task;
   columnName: string;
   onDelete: (taskId: number) => Promise<void>;
+  onDuplicate: (taskId: number) => Promise<void>;
   onEdit: (taskId: number, fields: TaskEditFields) => Promise<void>;
   onLabelClick?: (label: TaskLabel) => void;
 }
 
-export default function TaskCard({ task, columnName, onDelete, onEdit, onLabelClick }: TaskCardProps) {
+export default function TaskCard({
+  task,
+  columnName,
+  onDelete,
+  onDuplicate,
+  onEdit,
+  onLabelClick,
+}: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: taskDragId(task.id),
     data: { type: "task", task },
@@ -266,6 +289,7 @@ export default function TaskCard({ task, columnName, onDelete, onEdit, onLabelCl
           task={task}
           columnName={columnName}
           onDelete={onDelete}
+          onDuplicate={onDuplicate}
           onEdit={onEdit}
           onLabelClick={onLabelClick}
         />

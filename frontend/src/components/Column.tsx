@@ -23,6 +23,7 @@ interface ColumnProps {
   column: ColumnWithTasks;
   index: number;
   onDelete: (taskId: number) => Promise<void>;
+  onDuplicate: (taskId: number) => Promise<void>;
   onEdit: (
     taskId: number,
     fields: {
@@ -52,6 +53,7 @@ export default function Column({
   column,
   index,
   onDelete,
+  onDuplicate,
   onEdit,
   dateFrom,
   dateTo,
@@ -236,6 +238,7 @@ export default function Column({
               task={task}
               columnName={column.name}
               onDelete={onDelete}
+              onDuplicate={onDuplicate}
               onEdit={onEdit}
               onLabelClick={onLabelClick}
             />
