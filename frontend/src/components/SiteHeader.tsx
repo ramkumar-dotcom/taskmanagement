@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearUser, readUser, type AuthUser } from "@/lib/auth";
 
 export default function SiteHeader() {
+  const pathname = usePathname();
+  const onBoard = pathname === "/board";
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
@@ -39,7 +42,11 @@ export default function SiteHeader() {
           <Link href="/#how-it-works" className="hover:text-stone-900">
             How it works
           </Link>
-          <Link href="/board" className="hover:text-stone-900">
+          <Link
+            href="/board"
+            className={onBoard ? "font-medium text-stone-900" : "hover:text-stone-900"}
+            aria-current={onBoard ? "page" : undefined}
+          >
             Board
           </Link>
         </nav>
@@ -50,12 +57,18 @@ export default function SiteHeader() {
               <span className="hidden max-w-[10rem] truncate text-xs text-stone-500 sm:block">
                 {user.name}
               </span>
-              <Link
-                href="/board"
-                className="rounded-lg bg-teal-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-900"
-              >
-                Open board
-              </Link>
+              {onBoard ? (
+                <span className="rounded-lg bg-stone-200 px-3 py-1.5 text-sm font-medium text-stone-500">
+                  On the board
+                </span>
+              ) : (
+                <Link
+                  href="/board"
+                  className="rounded-lg bg-teal-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-900"
+                >
+                  Open board
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => clearUser()}
