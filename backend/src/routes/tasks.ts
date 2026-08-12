@@ -9,10 +9,18 @@ import type { SqlValue } from "../db";
 
 const router = Router();
 
+const TASK_FIELDS =
+  "id, column_id, title, description, position, created_at, due_date, start_date, completed_date";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 interface CreateTaskBody {
   title?: unknown;
   description?: unknown;
   columnId?: unknown;
+  dueDate?: unknown;
+  startDate?: unknown;
+  completedDate?: unknown;
 }
 
 interface UpdateTaskBody {
@@ -20,6 +28,9 @@ interface UpdateTaskBody {
   description?: unknown;
   columnId?: unknown;
   position?: unknown;
+  dueDate?: unknown;
+  startDate?: unknown;
+  completedDate?: unknown;
 }
 
 function badRequest(res: Response, message: string): void {
@@ -30,12 +41,37 @@ function asTrimmedString(value: unknown): string | null {
   return typeof value === "string" ? value.trim() : null;
 }
 
+function todayDate(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function parseDateInput(value: unknown, field: string): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  if (typeof value === "string" && DATE_RE.test(value)) return value;
+  throw new Error(`${field} must be YYYY-MM-DD`);
+}
+
+function isDoneName(name: string): boolean {
+  return name.trim().toLowerCase() === "done";
+}
+
+function isInProgressName(name: string): boolean {
+  return name.trim().toLowerCase() === "in progress";
+}
+
 // POST /api/tasks
 // Body: { title, description?, columnId }
 router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res) => {
   const title = asTrimmedString(req.body.title) ?? "";
   const description = asTrimmedString(req.body.description) ?? "";
   const columnId = Number(req.body.columnId);
+  let dueDate: string | null = null;
+  let startDate: string | null = null;
+  let completedDate: string | null = null;
 
   if (!title) {
     badRequest(res, "title is required");
@@ -47,15 +83,35 @@ router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res)
   }
 
   try {
+    dueDate = parseDateInput(req.body.dueDate, "dueDate") ?? null;
+    startDate = parseDateInput(req.body.startDate, "startDate") ?? null;
+    completedDate = parseDateInput(req.body.completedDate, "completedDate") ?? null;
+  } catch (err) {
+    badRequest(res, err instanceof Error ? err.message : "Invalid date");
+    return;
+  }
+
+  try {
     try {
       await ensureDatabase();
     } catch {
       // Tables may already exist.
     }
-    const column = await query<{ id: number }>("SELECT id FROM columns WHERE id = $1", [columnId]);
+    const column = await query<{ id: number; name: string }>(
+      "SELECT id, name FROM columns WHERE id = $1",
+      [columnId],
+    );
     if (column.rows.length === 0) {
       badRequest(res, "column does not exist");
       return;
+    }
+
+    const columnName = column.rows[0]?.name ?? "";
+    if (isInProgressName(columnName) && !startDate) {
+      startDate = todayDate();
+    }
+    if (isDoneName(columnName) && !completedDate) {
+      completedDate = todayDate();
     }
 
     const positionResult = await query<{ next_position: number | string }>(
@@ -66,10 +122,10 @@ router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res)
     const nextPosition = Number(positionResult.rows[0]?.next_position ?? 0);
 
     const created = await query<Task>(
-      `INSERT INTO tasks (column_id, title, description, position)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, column_id, title, description, position, created_at`,
-      [columnId, title, description || null, nextPosition],
+      `INSERT INTO tasks (column_id, title, description, position, due_date, start_date, completed_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING ${TASK_FIELDS}`,
+      [columnId, title, description || null, nextPosition, dueDate, startDate, completedDate],
     );
 
     const task = created.rows[0];
@@ -99,10 +155,26 @@ router.patch(
     const updates: string[] = [];
     const values: SqlValue[] = [];
 
-    const editingText =
-      typeof req.body.title === "string" || typeof req.body.description === "string";
+    let dueDate: string | null | undefined;
+    let startDate: string | null | undefined;
+    let completedDate: string | null | undefined;
+    try {
+      dueDate = parseDateInput(req.body.dueDate, "dueDate");
+      startDate = parseDateInput(req.body.startDate, "startDate");
+      completedDate = parseDateInput(req.body.completedDate, "completedDate");
+    } catch (err) {
+      badRequest(res, err instanceof Error ? err.message : "Invalid date");
+      return;
+    }
 
-    if (editingText) {
+    const editingContent =
+      typeof req.body.title === "string" ||
+      typeof req.body.description === "string" ||
+      dueDate !== undefined ||
+      startDate !== undefined ||
+      completedDate !== undefined;
+
+    if (editingContent) {
       const current = await query<{ column_name: string }>(
         `SELECT c.name AS column_name
          FROM tasks t
@@ -111,7 +183,7 @@ router.patch(
         [id],
       );
       const columnName = current.rows[0]?.column_name ?? "";
-      if (columnName.trim().toLowerCase() === "done") {
+      if (isDoneName(columnName)) {
         res.status(403).json({ error: "Done tasks cannot be edited." });
         return;
       }
@@ -130,6 +202,21 @@ router.patch(
     if (typeof req.body.description === "string") {
       values.push(req.body.description.trim() || null);
       updates.push(`description = $${values.length}`);
+    }
+
+    if (dueDate !== undefined) {
+      values.push(dueDate);
+      updates.push(`due_date = $${values.length}`);
+    }
+
+    if (startDate !== undefined) {
+      values.push(startDate);
+      updates.push(`start_date = $${values.length}`);
+    }
+
+    if (completedDate !== undefined) {
+      values.push(completedDate);
+      updates.push(`completed_date = $${values.length}`);
     }
 
     if (req.body.columnId !== undefined) {
@@ -156,7 +243,7 @@ router.patch(
     try {
       if (moving) {
         const current = await query<Task>(
-          "SELECT id, column_id, title, description, position, created_at FROM tasks WHERE id = $1",
+          `SELECT ${TASK_FIELDS} FROM tasks WHERE id = $1`,
           [id],
         );
         const task = current.rows[0];
@@ -167,16 +254,17 @@ router.patch(
 
         const destColumnId =
           req.body.columnId !== undefined ? Number(req.body.columnId) : task.column_id;
-        const destColumn = await query<{ id: number }>("SELECT id FROM columns WHERE id = $1", [
-          destColumnId,
-        ]);
+        const destColumn = await query<{ id: number; name: string }>(
+          "SELECT id, name FROM columns WHERE id = $1",
+          [destColumnId],
+        );
         if (destColumn.rows.length === 0) {
           badRequest(res, "column does not exist");
           return;
         }
 
         const siblings = await query<Task>(
-          `SELECT id, column_id, title, description, position, created_at
+          `SELECT ${TASK_FIELDS}
            FROM tasks
            WHERE column_id = $1 AND id <> $2
            ORDER BY position ASC, id ASC`,
@@ -212,10 +300,29 @@ router.patch(
               item.id,
             ]);
           }
+
+          const destName = destColumn.rows[0]?.name ?? "";
+          const dateUpdates: string[] = [];
+          const dateValues: SqlValue[] = [];
+          if (isInProgressName(destName) && !task.start_date) {
+            dateValues.push(todayDate());
+            dateUpdates.push(`start_date = $${dateValues.length}`);
+          }
+          if (isDoneName(destName) && !task.completed_date) {
+            dateValues.push(todayDate());
+            dateUpdates.push(`completed_date = $${dateValues.length}`);
+          }
+          if (dateUpdates.length > 0) {
+            dateValues.push(id);
+            await query(
+              `UPDATE tasks SET ${dateUpdates.join(", ")}, updated_at = ${nowSql()} WHERE id = $${dateValues.length}`,
+              dateValues,
+            );
+          }
         }
 
         const result = await query<Task>(
-          "SELECT id, column_id, title, description, position, created_at FROM tasks WHERE id = $1",
+          `SELECT ${TASK_FIELDS} FROM tasks WHERE id = $1`,
           [id],
         );
         res.json(result.rows[0]);
@@ -226,7 +333,7 @@ router.patch(
         `UPDATE tasks
          SET ${updates.join(", ")}
          WHERE id = $${values.length}
-         RETURNING id, column_id, title, description, position, created_at`,
+         RETURNING ${TASK_FIELDS}`,
         values,
       );
 

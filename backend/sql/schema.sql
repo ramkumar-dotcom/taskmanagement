@@ -29,9 +29,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   column_id   INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
   title       TEXT NOT NULL,
   description TEXT,
-  position    INTEGER NOT NULL DEFAULT 0,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  position       INTEGER NOT NULL DEFAULT 0,
+  due_date       TEXT,
+  start_date     TEXT,
+  completed_date TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Indexes make lookups faster. Not required for a tiny app, but good habit.

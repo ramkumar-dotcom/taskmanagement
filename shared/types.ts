@@ -11,6 +11,9 @@ export interface Task {
   description: string | null;
   position: number;
   created_at: string;
+  due_date: string | null;
+  start_date: string | null;
+  completed_date: string | null;
 }
 
 export interface Column {
@@ -54,6 +57,9 @@ export interface CreateTaskRequest {
   title: string;
   description?: string;
   columnId: number;
+  dueDate?: string;
+  startDate?: string;
+  completedDate?: string;
 }
 
 export interface UpdateTaskRequest {
@@ -61,6 +67,9 @@ export interface UpdateTaskRequest {
   description?: string;
   columnId?: number;
   position?: number;
+  dueDate?: string | null;
+  startDate?: string | null;
+  completedDate?: string | null;
 }
 
 export interface BoardHealthState {

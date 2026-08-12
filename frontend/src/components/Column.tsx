@@ -18,7 +18,16 @@ interface ColumnProps {
   index: number;
   onCreate: (input: CreateTaskRequest) => Promise<void>;
   onDelete: (taskId: number) => Promise<void>;
-  onEdit: (taskId: number, fields: { title: string; description: string }) => Promise<void>;
+  onEdit: (
+    taskId: number,
+    fields: {
+      title: string;
+      description: string;
+      dueDate?: string | null;
+      startDate?: string | null;
+      completedDate?: string | null;
+    },
+  ) => Promise<void>;
 }
 
 export default function Column({ column, index, onCreate, onDelete, onEdit }: ColumnProps) {
@@ -65,7 +74,7 @@ export default function Column({ column, index, onCreate, onDelete, onEdit }: Co
         ) : null}
       </div>
 
-      <AddTaskForm columnId={column.id} onCreated={onCreate} />
+      <AddTaskForm columnId={column.id} columnName={column.name} onCreated={onCreate} />
     </section>
   );
 }

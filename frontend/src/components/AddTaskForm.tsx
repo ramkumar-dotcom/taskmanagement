@@ -2,18 +2,23 @@
 
 import { useState, type FormEvent } from "react";
 import type { CreateTaskRequest } from "@tmb/shared";
+import { columnDateKind, columnDateLabel } from "@/lib/columns";
 import { errorMessage } from "@/lib/parse";
+import DateField from "./DateField";
 
 interface AddTaskFormProps {
   columnId: number;
+  columnName: string;
   onCreated: (input: CreateTaskRequest) => Promise<void>;
 }
 
-export default function AddTaskForm({ columnId, onCreated }: AddTaskFormProps) {
+export default function AddTaskForm({ columnId, columnName, onCreated }: AddTaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const dateKind = columnDateKind(columnName);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,13 +27,20 @@ export default function AddTaskForm({ columnId, onCreated }: AddTaskFormProps) {
     setBusy(true);
     setError("");
     try {
-      await onCreated({
+      const payload: CreateTaskRequest = {
         title: title.trim(),
         description: description.trim() || undefined,
         columnId,
-      });
+      };
+      if (date) {
+        if (dateKind === "due") payload.dueDate = date;
+        if (dateKind === "start") payload.startDate = date;
+        if (dateKind === "completed") payload.completedDate = date;
+      }
+      await onCreated(payload);
       setTitle("");
       setDescription("");
+      setDate("");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -51,6 +63,7 @@ export default function AddTaskForm({ columnId, onCreated }: AddTaskFormProps) {
         placeholder="Description (optional)"
         className="w-full resize-none rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs text-stone-700 outline-none placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
       />
+      <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
       <button
         type="submit"
         disabled={busy || !title.trim()}

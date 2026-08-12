@@ -98,8 +98,8 @@ export default function Board({ initial }: BoardProps) {
     setBoard(created);
   }
 
-  async function handleCreate({ title, columnId }: CreateTaskRequest): Promise<void> {
-    await createTask({ title, columnId });
+  async function handleCreate(input: CreateTaskRequest): Promise<void> {
+    await createTask(input);
     await load();
   }
 
@@ -110,7 +110,13 @@ export default function Board({ initial }: BoardProps) {
 
   async function handleEdit(
     taskId: number,
-    fields: { title: string; description: string },
+    fields: {
+      title: string;
+      description: string;
+      dueDate?: string | null;
+      startDate?: string | null;
+      completedDate?: string | null;
+    },
   ): Promise<void> {
     await updateTask(taskId, fields);
     await load();
@@ -171,6 +177,7 @@ export default function Board({ initial }: BoardProps) {
         columnId: current.column_id,
         position: current.position,
       });
+      await load();
     } catch (err) {
       setError(errorMessage(err));
       await load();

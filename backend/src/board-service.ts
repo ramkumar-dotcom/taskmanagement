@@ -20,7 +20,8 @@ export async function loadBoardById(boardId: number): Promise<BoardWithColumns |
   );
 
   const tasksResult = await query<Task>(
-    `SELECT t.id, t.column_id, t.title, t.description, t.position, t.created_at
+    `SELECT t.id, t.column_id, t.title, t.description, t.position, t.created_at,
+            t.due_date, t.start_date, t.completed_date
      FROM tasks t
      JOIN columns c ON c.id = t.column_id
      WHERE c.board_id = $1

@@ -10,6 +10,7 @@ import path from "node:path";
 import { config } from "./config";
 import {
   addBoardOwnerSql,
+  addTaskDatesSql,
   postgresSchema,
   postgresSequenceFix,
   removeDemoTasksSql,
@@ -98,7 +99,11 @@ function normalizeRow<T>(row: Record<string, unknown>): T {
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row)) {
     if (value instanceof Date) {
-      next[key] = value.toISOString();
+      next[key] = key.endsWith("_date")
+        ? value.toISOString().slice(0, 10)
+        : value.toISOString();
+    } else if (typeof value === "string" && key.endsWith("_date")) {
+      next[key] = value.slice(0, 10);
     } else if (typeof value === "bigint") {
       next[key] = Number(value);
     } else {
@@ -204,6 +209,11 @@ async function migrate(): Promise<void> {
     } catch {
       // column may already exist
     }
+    try {
+      await execStatements(addTaskDatesSql);
+    } catch {
+      // columns may already exist
+    }
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {
       await execStatements(seedSql);
@@ -219,6 +229,13 @@ async function migrate(): Promise<void> {
     getSqlite().exec("ALTER TABLE boards ADD COLUMN user_id INTEGER");
   } catch {
     // column may already exist
+  }
+  for (const column of ["due_date", "start_date", "completed_date"]) {
+    try {
+      getSqlite().exec(`ALTER TABLE tasks ADD COLUMN ${column} TEXT`);
+    } catch {
+      // column may already exist
+    }
   }
   const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
   if (Number(count.rows[0]?.n ?? 0) === 0) {

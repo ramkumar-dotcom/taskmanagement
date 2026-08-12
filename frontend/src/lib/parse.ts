@@ -47,6 +47,13 @@ export function parseHealth(value: unknown): HealthResponse {
   throw new Error("API /health returned an unexpected shape");
 }
 
+function asOptionalDate(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") return null;
+  const day = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
+}
+
 function parseTask(value: unknown): Task {
   if (
     isRecord(value) &&
@@ -64,6 +71,9 @@ function parseTask(value: unknown): Task {
       description: value.description,
       position: value.position,
       created_at: value.created_at,
+      due_date: asOptionalDate(value.due_date),
+      start_date: asOptionalDate(value.start_date),
+      completed_date: asOptionalDate(value.completed_date),
     };
   }
   throw new Error("API returned a task with an unexpected shape");

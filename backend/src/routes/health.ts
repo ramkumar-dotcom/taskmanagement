@@ -29,7 +29,7 @@ router.get("/health", async (_req, res) => {
       service: "task-management-board-api",
       database: "connected",
       driver: config.driver,
-      release: "board-no-block-migrate",
+      release: "task-dates",
     };
     res.json(body);
   } catch (err) {

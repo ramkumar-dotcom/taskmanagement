@@ -23,9 +23,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   column_id   INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
   title       TEXT NOT NULL,
   description TEXT,
-  position    INTEGER NOT NULL DEFAULT 0,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  position       INTEGER NOT NULL DEFAULT 0,
+  due_date       TEXT,
+  start_date     TEXT,
+  completed_date TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_columns_board_id ON columns(board_id);
@@ -61,9 +64,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   column_id   INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
   title       VARCHAR(200) NOT NULL,
   description TEXT,
-  position    INTEGER NOT NULL DEFAULT 0,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  position       INTEGER NOT NULL DEFAULT 0,
+  due_date       DATE,
+  start_date     DATE,
+  completed_date DATE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_columns_board_id ON columns(board_id);
@@ -103,6 +109,12 @@ DELETE FROM tasks WHERE title IN (
 
 export const addBoardOwnerSql = `
 ALTER TABLE boards ADD COLUMN IF NOT EXISTS user_id INTEGER;
+`;
+
+export const addTaskDatesSql = `
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_date DATE;
 `;
 
 export const postgresSequenceFix = `

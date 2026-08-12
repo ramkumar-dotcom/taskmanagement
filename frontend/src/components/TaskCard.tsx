@@ -4,14 +4,24 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, type FormEvent } from "react";
 import type { Task } from "@tmb/shared";
-import { isDoneColumnName } from "@/lib/columns";
+import { columnDateKind, columnDateLabel, isDoneColumnName } from "@/lib/columns";
+import { formatDate, isPastDate } from "@/lib/dates";
 import { taskDragId } from "@/lib/dnd";
+import DateField from "./DateField";
+
+type TaskEditFields = {
+  title: string;
+  description: string;
+  dueDate?: string | null;
+  startDate?: string | null;
+  completedDate?: string | null;
+};
 
 interface TaskCardFaceProps {
   task: Task;
   columnName?: string;
   onDelete?: (taskId: number) => Promise<void>;
-  onEdit?: (taskId: number, fields: { title: string; description: string }) => Promise<void>;
+  onEdit?: (taskId: number, fields: TaskEditFields) => Promise<void>;
   overlay?: boolean;
 }
 
@@ -23,11 +33,26 @@ export function TaskCardFace({
   overlay = false,
 }: TaskCardFaceProps) {
   const canEdit = Boolean(onEdit) && !isDoneColumnName(columnName ?? "");
+  const dateKind = columnDateKind(columnName ?? "");
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
+  const [date, setDate] = useState(
+    (dateKind === "due" ? task.due_date : dateKind === "start" ? task.start_date : task.completed_date) ??
+      "",
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  function resetForm(): void {
+    setTitle(task.title);
+    setDescription(task.description ?? "");
+    setDate(
+      (dateKind === "due" ? task.due_date : dateKind === "start" ? task.start_date : task.completed_date) ??
+        "",
+    );
+    setError("");
+  }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,7 +62,14 @@ export function TaskCardFace({
     setBusy(true);
     setError("");
     try {
-      await onEdit(task.id, { title: nextTitle, description: description.trim() });
+      const fields: TaskEditFields = {
+        title: nextTitle,
+        description: description.trim(),
+      };
+      if (dateKind === "due") fields.dueDate = date || null;
+      if (dateKind === "start") fields.startDate = date || null;
+      if (dateKind === "completed") fields.completedDate = date || null;
+      await onEdit(task.id, fields);
       setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save");
@@ -67,6 +99,7 @@ export function TaskCardFace({
             placeholder="Description (optional)"
             className="w-full resize-none rounded-md border border-stone-300 px-2 py-1.5 text-xs text-stone-700 outline-none focus:border-teal-700"
           />
+          <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
           {error ? <p className="text-xs text-red-700">{error}</p> : null}
           <div className="flex gap-2">
             <button
@@ -80,9 +113,7 @@ export function TaskCardFace({
               type="button"
               onClick={() => {
                 setEditing(false);
-                setTitle(task.title);
-                setDescription(task.description ?? "");
-                setError("");
+                resetForm();
               }}
               className="rounded-md px-2.5 py-1 text-xs text-stone-600 hover:bg-stone-100"
             >
@@ -134,7 +165,37 @@ export function TaskCardFace({
       {task.description ? (
         <p className="mt-1 text-xs leading-5 text-stone-500">{task.description}</p>
       ) : null}
+      <TaskDates task={task} />
     </article>
+  );
+}
+
+function TaskDates({ task }: { task: Task }) {
+  const items = [
+    task.due_date
+      ? {
+          key: "due",
+          label: "Due",
+          value: task.due_date,
+          className: isPastDate(task.due_date) && !task.completed_date ? "text-amber-800" : "text-stone-500",
+        }
+      : null,
+    task.start_date ? { key: "start", label: "Started", value: task.start_date, className: "text-stone-500" } : null,
+    task.completed_date
+      ? { key: "done", label: "Completed", value: task.completed_date, className: "text-teal-800" }
+      : null,
+  ].filter((item): item is { key: string; label: string; value: string; className: string } => item !== null);
+
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="mt-2 space-y-0.5">
+      {items.map((item) => (
+        <li key={item.key} className={`text-[11px] ${item.className}`}>
+          {item.label} {formatDate(item.value)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -142,7 +203,7 @@ interface TaskCardProps {
   task: Task;
   columnName: string;
   onDelete: (taskId: number) => Promise<void>;
-  onEdit: (taskId: number, fields: { title: string; description: string }) => Promise<void>;
+  onEdit: (taskId: number, fields: TaskEditFields) => Promise<void>;
 }
 
 export default function TaskCard({ task, columnName, onDelete, onEdit }: TaskCardProps) {
