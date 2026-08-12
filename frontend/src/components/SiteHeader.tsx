@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearUser, readUser, type AuthUser } from "@/lib/auth";
 
 export default function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const onBoard = pathname === "/board";
   const [user, setUser] = useState<AuthUser | null>(null);
 
@@ -71,7 +72,10 @@ export default function SiteHeader() {
               )}
               <button
                 type="button"
-                onClick={() => clearUser()}
+                onClick={() => {
+                  clearUser();
+                  router.replace("/");
+                }}
                 className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-700 hover:bg-white"
               >
                 Log out

@@ -1,5 +1,6 @@
 import type { BoardPageData } from "@tmb/shared";
 import Board from "@/components/Board";
+import RequireAuth from "@/components/RequireAuth";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
@@ -13,7 +14,9 @@ export default function BoardPage() {
   return (
     <div className="min-h-full">
       <SiteHeader />
-      <Board initial={empty} />
+      <RequireAuth>
+        <Board initial={empty} />
+      </RequireAuth>
       <SiteFooter />
     </div>
   );
