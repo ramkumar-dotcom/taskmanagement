@@ -41,6 +41,7 @@ import {
 } from "@/lib/dnd";
 import type { TaskSort } from "@/lib/priority";
 import { errorMessage } from "@/lib/parse";
+import { BOARD_VIEWS, taskMatchesView, type BoardView } from "@/lib/views";
 import { DEFAULT_WIP_LIMIT, readWipLimit, saveWipLimit } from "@/lib/wip";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import AddColumnCard from "./AddColumnCard";
@@ -72,6 +73,7 @@ export default function Board({ initial }: BoardProps) {
   const [dateField, setDateField] = useState<DateFilterField>("column");
   const [sort, setSort] = useState<TaskSort>("board");
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<BoardView>("all");
   const [wipLimit, setWipLimit] = useState(DEFAULT_WIP_LIMIT);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
@@ -301,6 +303,34 @@ export default function Board({ initial }: BoardProps) {
   const inProgressCount =
     board?.columns.find((column) => isInProgressColumnName(column.name))?.tasks.length ?? 0;
 
+  function isVisible(task: Task, columnName: string): boolean {
+    return (
+      taskMatchesDateFilter(task, columnName, dateFrom, dateTo, dateField) &&
+      taskMatchesSearch(task, search) &&
+      taskMatchesView(task, columnName, view)
+    );
+  }
+
+  const visibleColumns =
+    board?.columns.filter(
+      (column) => view === "all" || column.tasks.some((task) => isVisible(task, column.name)),
+    ) ?? [];
+
+  function viewCount(nextView: BoardView): number {
+    if (!board) return 0;
+    return board.columns.reduce(
+      (count, column) =>
+        count +
+        column.tasks.filter(
+          (task) =>
+            taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField) &&
+            taskMatchesSearch(task, search) &&
+            taskMatchesView(task, column.name, nextView),
+        ).length,
+      0,
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <header className="mb-8">
@@ -352,6 +382,32 @@ export default function Board({ initial }: BoardProps) {
             ) : null}
           </div>
         </label>
+        <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
+            View
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {BOARD_VIEWS.map((option) => {
+              const selected = view === option.value;
+              const count = viewCount(option.value);
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setView(option.value)}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                    selected
+                      ? "border-teal-800 bg-teal-800 text-white dark:border-teal-700 dark:bg-teal-700"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-200 dark:hover:bg-stone-800"
+                  }`}
+                >
+                  {option.label}
+                  {option.value !== "all" ? ` (${count})` : ""}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
           <DateRangeFilter
             from={dateFrom}
@@ -361,16 +417,12 @@ export default function Board({ initial }: BoardProps) {
               board?.columns.reduce(
                 (count, column) =>
                   count +
-                  column.tasks.filter(
-                    (task) =>
-                      taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField) &&
-                      taskMatchesSearch(task, search),
-                  ).length,
+                  column.tasks.filter((task) => isVisible(task, column.name)).length,
                 0,
               ) ?? 0
             }
             totalCount={board?.columns.reduce((count, column) => count + column.tasks.length, 0) ?? 0}
-            filterActive={Boolean(dateFrom || dateTo || search.trim())}
+            filterActive={Boolean(dateFrom || dateTo || search.trim() || view !== "all")}
             onFromChange={setDateFrom}
             onToChange={setDateTo}
             onFieldChange={setDateField}
@@ -434,32 +486,41 @@ export default function Board({ initial }: BoardProps) {
           }}
         >
           <SortableContext
-            items={board.columns.map((column) => columnSortId(column.id))}
+            items={visibleColumns.map((column) => columnSortId(column.id))}
             strategy={horizontalListSortingStrategy}
           >
             <div className="flex gap-4 overflow-x-auto pb-2">
-              {board.columns.map((column, index) => (
-                <Column
-                  key={column.id}
-                  column={column}
-                  index={index}
-                  onDelete={handleDelete}
-                  onDuplicate={handleDuplicateTask}
-                  onEdit={handleEdit}
-                  dateFrom={dateFrom}
-                  dateTo={dateTo}
-                  dateField={dateField}
-                  sort={sort}
-                  search={search}
-                  onLabelClick={(label) => setSearch(label)}
-                  wipLimit={wipLimit}
-                  canMoveLeft={index > 0}
-                  canMoveRight={index < board.columns.length - 1}
-                  onRename={handleRenameColumn}
-                  onMove={handleMoveColumn}
-                />
-              ))}
-              <AddColumnCard onCreate={handleCreateColumn} />
+              {visibleColumns.map((column) => {
+                const index = board.columns.findIndex((item) => item.id === column.id);
+                return (
+                  <Column
+                    key={column.id}
+                    column={column}
+                    index={index}
+                    onDelete={handleDelete}
+                    onDuplicate={handleDuplicateTask}
+                    onEdit={handleEdit}
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    dateField={dateField}
+                    sort={sort}
+                    search={search}
+                    view={view}
+                    onLabelClick={(label) => setSearch(label)}
+                    wipLimit={wipLimit}
+                    canMoveLeft={index > 0}
+                    canMoveRight={index < board.columns.length - 1}
+                    onRename={handleRenameColumn}
+                    onMove={handleMoveColumn}
+                  />
+                );
+              })}
+              {view === "all" ? <AddColumnCard onCreate={handleCreateColumn} /> : null}
+              {visibleColumns.length === 0 ? (
+                <p className="py-10 text-sm text-stone-500 dark:text-stone-400">
+                  {BOARD_VIEWS.find((option) => option.value === view)?.empty ?? "No matching tasks"}
+                </p>
+              ) : null}
             </div>
           </SortableContext>
           <DragOverlay dropAnimation={dropAnimation}>

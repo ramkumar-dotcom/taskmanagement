@@ -11,6 +11,7 @@ import { taskMatchesDateFilter } from "@/lib/dates";
 import { columnDragId, columnSortId, taskDragId } from "@/lib/dnd";
 import { taskMatchesSearch } from "@/lib/labels";
 import { sortTasks, type TaskSort } from "@/lib/priority";
+import { taskMatchesView, type BoardView } from "@/lib/views";
 import TaskCard from "./TaskCard";
 
 const ACCENTS = [
@@ -41,6 +42,7 @@ interface ColumnProps {
   dateField: DateFilterField;
   sort: TaskSort;
   search: string;
+  view: BoardView;
   onLabelClick: (label: TaskLabel) => void;
   wipLimit: number;
   canMoveLeft: boolean;
@@ -60,6 +62,7 @@ export default function Column({
   dateField,
   sort,
   search,
+  view,
   onLabelClick,
   wipLimit,
   canMoveLeft,
@@ -83,11 +86,12 @@ export default function Column({
     column.tasks.filter(
       (task) =>
         taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField) &&
-        taskMatchesSearch(task, search),
+        taskMatchesSearch(task, search) &&
+        taskMatchesView(task, column.name, view),
     ),
     sort,
   );
-  const filterActive = Boolean(dateFrom || dateTo || search.trim());
+  const filterActive = Boolean(dateFrom || dateTo || search.trim() || view !== "all");
   const inProgress = isInProgressColumnName(column.name);
   const overWip = inProgress && column.tasks.length > wipLimit;
 
