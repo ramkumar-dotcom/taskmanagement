@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BoardPageData, CreateTaskRequest } from "@tmb/shared";
 import { createTask, deleteTask, getBoard, getHealth, updateTask } from "@/lib/api";
 import { errorMessage } from "@/lib/parse";
@@ -14,6 +14,10 @@ export default function Board({ initial }: BoardProps) {
   const [board, setBoard] = useState(initial.board);
   const [health, setHealth] = useState(initial.health);
   const [error, setError] = useState(initial.error);
+
+  useEffect(() => {
+    void load();
+  }, []);
 
   async function load(): Promise<void> {
     try {
