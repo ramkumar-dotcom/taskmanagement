@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { BoardPageData, CreateTaskRequest } from "@tmb/shared";
-import { createTask, deleteTask, getBoard, getHealth, updateTask } from "@/lib/api";
+import { createTask, deleteTask, getBoard, updateTask } from "@/lib/api";
 import { errorMessage } from "@/lib/parse";
 import Column from "./Column";
 
@@ -12,7 +12,6 @@ interface BoardProps {
 
 export default function Board({ initial }: BoardProps) {
   const [board, setBoard] = useState(initial.board);
-  const [health, setHealth] = useState(initial.health);
   const [error, setError] = useState(initial.error);
 
   useEffect(() => {
@@ -21,19 +20,10 @@ export default function Board({ initial }: BoardProps) {
 
   async function load(): Promise<void> {
     try {
-      const [nextBoard, nextHealth] = await Promise.all([getBoard(), getHealth()]);
-      setBoard(nextBoard);
-      setHealth({
-        label:
-          nextHealth.database === "connected"
-            ? "API + database connected"
-            : "API up, database down",
-        ok: nextHealth.ok,
-      });
+      setBoard(await getBoard());
       setError("");
     } catch (err) {
-      setHealth({ label: "Cannot reach the API", ok: false });
-      setError(`${errorMessage(err)} — check NEXT_PUBLIC_API_URL`);
+      setError(errorMessage(err));
     }
   }
 
@@ -65,16 +55,6 @@ export default function Board({ initial }: BoardProps) {
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-500">
             Add a card, move it across columns, and check it off when it&apos;s done.
           </p>
-        </div>
-        <div
-          className={`inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 text-xs ${
-            health.ok
-              ? "border-teal-200 bg-teal-50 text-teal-800"
-              : "border-red-200 bg-red-50 text-red-800"
-          }`}
-        >
-          <span className={`h-2 w-2 rounded-full ${health.ok ? "bg-teal-600" : "bg-red-500"}`} />
-          {health.label}
         </div>
       </header>
 
