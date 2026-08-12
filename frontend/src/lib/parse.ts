@@ -89,22 +89,46 @@ function parseColumn(value: unknown): ColumnWithTasks {
   throw new Error("API returned a column with an unexpected shape");
 }
 
+function asId(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  return null;
+}
+
 export function parseBoard(value: unknown): BoardWithColumns {
+  const id = isRecord(value) ? asId(value.id) : null;
   if (
     isRecord(value) &&
-    typeof value.id === "number" &&
+    id !== null &&
     typeof value.name === "string" &&
     typeof value.created_at === "string" &&
     Array.isArray(value.columns)
   ) {
     return {
-      id: value.id,
+      id,
       name: value.name,
       created_at: value.created_at,
       columns: value.columns.map(parseColumn),
     };
   }
   throw new Error("API /board returned an unexpected shape");
+}
+
+export function parseBoardSummary(value: unknown): { id: number; name: string; created_at: string } {
+  const id = isRecord(value) ? asId(value.id) : null;
+  if (isRecord(value) && id !== null && typeof value.name === "string" && typeof value.created_at === "string") {
+    return { id, name: value.name, created_at: value.created_at };
+  }
+  throw new Error("API returned a board with an unexpected shape");
+}
+
+export function parseBoardList(value: unknown): { id: number; name: string; created_at: string }[] {
+  if (!Array.isArray(value)) {
+    throw new Error("API /boards returned an unexpected shape");
+  }
+  return value.map(parseBoardSummary);
 }
 
 export function parseTaskResponse(value: unknown): Task {

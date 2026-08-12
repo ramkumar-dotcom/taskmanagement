@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { PublicUser } from "@tmb/shared";
+import { createBoardWithColumns } from "../board-service";
 import { describeError, ensureDatabase, query } from "../db";
 import { hashPassword, verifyPassword } from "../password";
 
@@ -60,6 +61,7 @@ router.post("/register", async (req, res) => {
       res.status(500).json({ error: "Could not create the account." });
       return;
     }
+    await createBoardWithColumns("My board", Number(user.id));
     res.status(201).json(toPublic(user));
   } catch (err) {
     console.error("POST /api/register failed:", err);

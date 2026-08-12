@@ -13,9 +13,11 @@ import {
 } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
 import type { BoardPageData, CreateTaskRequest, Task } from "@tmb/shared";
-import { createTask, deleteTask, getBoard, updateTask } from "@/lib/api";
+import { createBoard, createTask, deleteTask, getBoard, listBoards, updateTask } from "@/lib/api";
+import { readSelectedBoardId, readUser, saveSelectedBoardId } from "@/lib/auth";
 import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
 import { errorMessage } from "@/lib/parse";
+import BoardSwitcher from "./BoardSwitcher";
 import Column from "./Column";
 import { TaskCardFace } from "./TaskCard";
 
@@ -33,6 +35,8 @@ interface BoardProps {
 
 export default function Board({ initial }: BoardProps) {
   const [board, setBoard] = useState(initial.board);
+  const [boards, setBoards] = useState<{ id: number; name: string; created_at: string }[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [error, setError] = useState(initial.error);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
@@ -47,12 +51,51 @@ export default function Board({ initial }: BoardProps) {
   }, []);
 
   async function load(): Promise<void> {
+    const user = readUser();
+    if (!user) {
+      setError("You need to log in.");
+      return;
+    }
     try {
-      setBoard(await getBoard());
+      const listed = await listBoards(user.id);
+      setBoards(listed);
+      const preferred = readSelectedBoardId();
+      const nextId =
+        (preferred && listed.some((item) => item.id === preferred) ? preferred : null) ??
+        listed[0]?.id ??
+        null;
+      setSelectedId(nextId);
+      if (nextId) {
+        saveSelectedBoardId(nextId);
+        setBoard(await getBoard(nextId));
+      } else {
+        setBoard(null);
+      }
       setError("");
     } catch (err) {
       setError(errorMessage(err));
     }
+  }
+
+  async function handleSelectBoard(boardId: number): Promise<void> {
+    saveSelectedBoardId(boardId);
+    setSelectedId(boardId);
+    try {
+      setBoard(await getBoard(boardId));
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function handleCreateBoard(name: string): Promise<void> {
+    const user = readUser();
+    if (!user) throw new Error("You need to log in.");
+    const created = await createBoard(name, user.id);
+    saveSelectedBoardId(created.id);
+    setSelectedId(created.id);
+    setBoards((current) => [...current, { id: created.id, name: created.name, created_at: created.created_at }]);
+    setBoard(created);
   }
 
   async function handleCreate({ title, columnId }: CreateTaskRequest): Promise<void> {
@@ -148,6 +191,15 @@ export default function Board({ initial }: BoardProps) {
         </p>
       </header>
 
+      <BoardSwitcher
+        boards={boards}
+        selectedId={selectedId}
+        onSelect={(boardId) => {
+          void handleSelectBoard(boardId);
+        }}
+        onCreate={handleCreateBoard}
+      />
+
       {error ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {error}
@@ -180,7 +232,9 @@ export default function Board({ initial }: BoardProps) {
           </DragOverlay>
         </DndContext>
       ) : !error ? (
-        <p className="text-sm text-stone-500">Loading board…</p>
+        <p className="text-sm text-stone-500">
+          {boards.length === 0 ? "Create a board to get started." : "Loading board…"}
+        </p>
       ) : null}
     </div>
   );

@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
 import {
+  addBoardOwnerSql,
   postgresSchema,
   postgresSequenceFix,
   removeDemoTasksSql,
@@ -198,6 +199,11 @@ export async function resetDatabase(): Promise<void> {
 async function migrate(): Promise<void> {
   if (config.driver === "postgres") {
     await execStatements(postgresSchema);
+    try {
+      await execStatements(addBoardOwnerSql);
+    } catch {
+      // column may already exist
+    }
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {
       await execStatements(seedSql);
@@ -209,6 +215,11 @@ async function migrate(): Promise<void> {
   }
 
   getSqlite().exec(sqliteSchema);
+  try {
+    getSqlite().exec("ALTER TABLE boards ADD COLUMN user_id INTEGER");
+  } catch {
+    // column may already exist
+  }
   const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
   if (Number(count.rows[0]?.n ?? 0) === 0) {
     getSqlite().exec(seedSql);

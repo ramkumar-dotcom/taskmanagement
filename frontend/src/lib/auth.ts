@@ -5,6 +5,18 @@ export interface AuthUser {
 }
 
 const KEY = "tmb_user";
+const BOARD_KEY = "tmb_board_id";
+
+export function readSelectedBoardId(): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(BOARD_KEY);
+  const id = raw ? Number(raw) : NaN;
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+export function saveSelectedBoardId(boardId: number): void {
+  window.localStorage.setItem(BOARD_KEY, String(boardId));
+}
 
 export function readUser(): AuthUser | null {
   if (typeof window === "undefined") return null;

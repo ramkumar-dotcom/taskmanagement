@@ -6,6 +6,7 @@ export const sqliteSchema = `
 CREATE TABLE IF NOT EXISTS boards (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   name       TEXT NOT NULL,
+  user_id    INTEGER,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -43,6 +44,7 @@ export const postgresSchema = `
 CREATE TABLE IF NOT EXISTS boards (
   id         SERIAL PRIMARY KEY,
   name       VARCHAR(120) NOT NULL,
+  user_id    INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -97,6 +99,10 @@ DELETE FROM tasks WHERE title IN (
   'Create the project folder',
   'Start the database'
 );
+`;
+
+export const addBoardOwnerSql = `
+ALTER TABLE boards ADD COLUMN IF NOT EXISTS user_id INTEGER;
 `;
 
 export const postgresSequenceFix = `

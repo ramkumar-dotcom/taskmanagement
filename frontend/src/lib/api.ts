@@ -18,6 +18,7 @@ import type {
 import {
   getApiErrorMessage,
   parseBoard,
+  parseBoardList,
   parseHealth,
   parsePublicUser,
   parseTaskResponse,
@@ -71,8 +72,24 @@ export async function getHealth(): Promise<HealthResponse> {
   return parseHealth(await request("/api/health"));
 }
 
-export async function getBoard(): Promise<BoardWithColumns> {
+export async function getBoard(boardId?: number): Promise<BoardWithColumns> {
+  if (boardId) {
+    return parseBoard(await request(`/api/boards/${boardId}`));
+  }
   return parseBoard(await request("/api/board"));
+}
+
+export async function listBoards(userId: number): Promise<{ id: number; name: string; created_at: string }[]> {
+  return parseBoardList(await request(`/api/boards?userId=${userId}`));
+}
+
+export async function createBoard(name: string, userId: number): Promise<BoardWithColumns> {
+  return parseBoard(
+    await request("/api/boards", {
+      method: "POST",
+      body: JSON.stringify({ name, userId }),
+    }),
+  );
 }
 
 export async function createTask(body: CreateTaskRequest): Promise<Task> {
