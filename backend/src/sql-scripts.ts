@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   start_date     TEXT,
   completed_date TEXT,
   priority       TEXT NOT NULL DEFAULT 'medium',
+  labels         TEXT NOT NULL DEFAULT '[]',
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   start_date     DATE,
   completed_date DATE,
   priority       VARCHAR(10) NOT NULL DEFAULT 'medium',
+  labels         TEXT NOT NULL DEFAULT '[]',
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -121,6 +123,10 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_date DATE;
 
 export const addTaskPrioritySql = `
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority VARCHAR(10) NOT NULL DEFAULT 'medium';
+`;
+
+export const addTaskLabelsSql = `
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS labels TEXT NOT NULL DEFAULT '[]';
 `;
 
 export const postgresSequenceFix = `

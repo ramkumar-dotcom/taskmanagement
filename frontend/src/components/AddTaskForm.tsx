@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { CreateTaskRequest, TaskPriority } from "@tmb/shared";
+import type { CreateTaskRequest, TaskLabel, TaskPriority } from "@tmb/shared";
 import { columnDateKind, columnDateLabel } from "@/lib/columns";
 import { errorMessage } from "@/lib/parse";
 import DateField from "./DateField";
+import LabelField from "./LabelField";
 import PriorityField from "./PriorityField";
 
 interface AddTaskFormProps {
@@ -18,6 +19,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [labels, setLabels] = useState<TaskLabel[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const dateKind = columnDateKind(columnName);
@@ -34,6 +36,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
         description: description.trim() || undefined,
         columnId,
         priority,
+        labels,
       };
       if (date) {
         if (dateKind === "due") payload.dueDate = date;
@@ -45,6 +48,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
       setDescription("");
       setDate("");
       setPriority("medium");
+      setLabels([]);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -69,6 +73,7 @@ export default function AddTaskForm({ columnId, columnName, onCreated }: AddTask
       />
       <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
       <PriorityField value={priority} onChange={setPriority} />
+      <LabelField value={labels} onChange={setLabels} />
       <button
         type="submit"
         disabled={busy || !title.trim()}

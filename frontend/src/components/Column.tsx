@@ -2,10 +2,11 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { ColumnWithTasks, CreateTaskRequest, TaskPriority } from "@tmb/shared";
+import type { ColumnWithTasks, CreateTaskRequest, TaskLabel, TaskPriority } from "@tmb/shared";
 import type { DateFilterField } from "@/lib/dates";
 import { taskMatchesDateFilter } from "@/lib/dates";
 import { columnDragId, taskDragId } from "@/lib/dnd";
+import { taskMatchesSearch } from "@/lib/labels";
 import { sortTasks, type TaskSort } from "@/lib/priority";
 import AddTaskForm from "./AddTaskForm";
 import TaskCard from "./TaskCard";
@@ -30,12 +31,15 @@ interface ColumnProps {
       startDate?: string | null;
       completedDate?: string | null;
       priority?: TaskPriority;
+      labels?: TaskLabel[];
     },
   ) => Promise<void>;
   dateFrom: string;
   dateTo: string;
   dateField: DateFilterField;
   sort: TaskSort;
+  search: string;
+  onLabelClick: (label: TaskLabel) => void;
 }
 
 export default function Column({
@@ -48,6 +52,8 @@ export default function Column({
   dateTo,
   dateField,
   sort,
+  search,
+  onLabelClick,
 }: ColumnProps) {
   const accent = ACCENTS[index % ACCENTS.length];
   const { setNodeRef, isOver } = useDroppable({
@@ -55,12 +61,14 @@ export default function Column({
     data: { type: "column", columnId: column.id },
   });
   const visibleTasks = sortTasks(
-    column.tasks.filter((task) =>
-      taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+    column.tasks.filter(
+      (task) =>
+        taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField) &&
+        taskMatchesSearch(task, search),
     ),
     sort,
   );
-  const filterActive = Boolean(dateFrom || dateTo);
+  const filterActive = Boolean(dateFrom || dateTo || search.trim());
 
   return (
     <section
@@ -89,6 +97,7 @@ export default function Column({
               columnName={column.name}
               onDelete={onDelete}
               onEdit={onEdit}
+              onLabelClick={onLabelClick}
             />
           ))}
         </SortableContext>
@@ -99,7 +108,7 @@ export default function Column({
         ) : null}
         {column.tasks.length > 0 && visibleTasks.length === 0 ? (
           <p className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-xs text-stone-400 dark:border-stone-600 dark:text-stone-500">
-            No tasks in this date range
+            No matching tasks
           </p>
         ) : null}
       </div>

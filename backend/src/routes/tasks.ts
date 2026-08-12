@@ -3,14 +3,14 @@
 
 import { Router } from "express";
 import type { Request, Response } from "express";
-import type { Task, TaskPriority } from "@tmb/shared";
+import type { Task, TaskLabel, TaskPriority } from "@tmb/shared";
 import { ensureDatabase, nowSql, query } from "../db";
 import type { SqlValue } from "../db";
 
 const router = Router();
 
 const TASK_FIELDS =
-  "id, column_id, title, description, position, created_at, due_date, start_date, completed_date, priority";
+  "id, column_id, title, description, position, created_at, due_date, start_date, completed_date, priority, labels";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -22,6 +22,7 @@ interface CreateTaskBody {
   startDate?: unknown;
   completedDate?: unknown;
   priority?: unknown;
+  labels?: unknown;
 }
 
 interface UpdateTaskBody {
@@ -33,6 +34,7 @@ interface UpdateTaskBody {
   startDate?: unknown;
   completedDate?: unknown;
   priority?: unknown;
+  labels?: unknown;
 }
 
 function badRequest(res: Response, message: string): void {
@@ -53,6 +55,20 @@ function todayDate(): string {
 function parsePriority(value: unknown): TaskPriority {
   if (value === "low" || value === "medium" || value === "high") return value;
   throw new Error("priority must be low, medium, or high");
+}
+
+function parseLabels(value: unknown): TaskLabel[] {
+  if (!Array.isArray(value)) {
+    throw new Error("labels must be an array");
+  }
+  const unique = new Set<TaskLabel>();
+  for (const item of value) {
+    if (item !== "bug" && item !== "feature" && item !== "design" && item !== "docs" && item !== "chore") {
+      throw new Error("labels must be bug, feature, design, docs, or chore");
+    }
+    unique.add(item);
+  }
+  return [...unique];
 }
 
 function parseDateInput(value: unknown, field: string): string | null | undefined {
@@ -103,6 +119,7 @@ router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res)
   let startDate: string | null = null;
   let completedDate: string | null = null;
   let priority: TaskPriority = "medium";
+  let labels: TaskLabel[] = [];
 
   if (!title) {
     badRequest(res, "title is required");
@@ -119,6 +136,9 @@ router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res)
     completedDate = parseDateInput(req.body.completedDate, "completedDate") ?? null;
     if (req.body.priority !== undefined) {
       priority = parsePriority(req.body.priority);
+    }
+    if (req.body.labels !== undefined) {
+      labels = parseLabels(req.body.labels);
     }
   } catch (err) {
     badRequest(res, err instanceof Error ? err.message : "Invalid date");
@@ -156,10 +176,20 @@ router.post("/tasks", async (req: Request<object, unknown, CreateTaskBody>, res)
     const nextPosition = Number(positionResult.rows[0]?.next_position ?? 0);
 
     const created = await query<Task>(
-      `INSERT INTO tasks (column_id, title, description, position, due_date, start_date, completed_date, priority)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO tasks (column_id, title, description, position, due_date, start_date, completed_date, priority, labels)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING ${TASK_FIELDS}`,
-      [columnId, title, description || null, nextPosition, dueDate, startDate, completedDate, priority],
+      [
+        columnId,
+        title,
+        description || null,
+        nextPosition,
+        dueDate,
+        startDate,
+        completedDate,
+        priority,
+        JSON.stringify(labels),
+      ],
     );
 
     const task = created.rows[0];
@@ -193,12 +223,16 @@ router.patch(
     let startDate: string | null | undefined;
     let completedDate: string | null | undefined;
     let priority: TaskPriority | undefined;
+    let labels: TaskLabel[] | undefined;
     try {
       dueDate = parseDateInput(req.body.dueDate, "dueDate");
       startDate = parseDateInput(req.body.startDate, "startDate");
       completedDate = parseDateInput(req.body.completedDate, "completedDate");
       if (req.body.priority !== undefined) {
         priority = parsePriority(req.body.priority);
+      }
+      if (req.body.labels !== undefined) {
+        labels = parseLabels(req.body.labels);
       }
     } catch (err) {
       badRequest(res, err instanceof Error ? err.message : "Invalid date");
@@ -211,7 +245,8 @@ router.patch(
       dueDate !== undefined ||
       startDate !== undefined ||
       completedDate !== undefined ||
-      priority !== undefined;
+      priority !== undefined ||
+      labels !== undefined;
 
     if (editingContent) {
       const current = await query<{ column_name: string }>(
@@ -261,6 +296,11 @@ router.patch(
     if (priority !== undefined) {
       values.push(priority);
       updates.push(`priority = $${values.length}`);
+    }
+
+    if (labels !== undefined) {
+      values.push(JSON.stringify(labels));
+      updates.push(`labels = $${values.length}`);
     }
 
     if (req.body.columnId !== undefined) {

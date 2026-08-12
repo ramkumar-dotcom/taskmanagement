@@ -6,6 +6,9 @@
 
 export type TaskPriority = "low" | "medium" | "high";
 
+export const TASK_LABELS = ["bug", "feature", "design", "docs", "chore"] as const;
+export type TaskLabel = (typeof TASK_LABELS)[number];
+
 export interface Task {
   id: number;
   column_id: number;
@@ -17,6 +20,7 @@ export interface Task {
   start_date: string | null;
   completed_date: string | null;
   priority: TaskPriority;
+  labels: TaskLabel[];
 }
 
 export interface Column {
@@ -64,6 +68,7 @@ export interface CreateTaskRequest {
   startDate?: string;
   completedDate?: string;
   priority?: TaskPriority;
+  labels?: TaskLabel[];
 }
 
 export interface UpdateTaskRequest {
@@ -75,6 +80,7 @@ export interface UpdateTaskRequest {
   startDate?: string | null;
   completedDate?: string | null;
   priority?: TaskPriority;
+  labels?: TaskLabel[];
 }
 
 export interface BoardHealthState {

@@ -11,6 +11,7 @@ import { config } from "./config";
 import {
   addBoardOwnerSql,
   addTaskDatesSql,
+  addTaskLabelsSql,
   addTaskPrioritySql,
   postgresSchema,
   postgresSequenceFix,
@@ -96,6 +97,21 @@ function toSqlite(text: string): string {
   return text.replace(/\$\d+/g, "?");
 }
 
+const KNOWN_LABELS = new Set(["bug", "feature", "design", "docs", "chore"]);
+
+function parseStoredLabels(value: unknown): string[] {
+  let raw: unknown = value;
+  if (typeof value === "string") {
+    try {
+      raw = JSON.parse(value) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is string => typeof item === "string" && KNOWN_LABELS.has(item));
+}
+
 function normalizeRow<T>(row: Record<string, unknown>): T {
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row)) {
@@ -105,6 +121,8 @@ function normalizeRow<T>(row: Record<string, unknown>): T {
         : value.toISOString();
     } else if (typeof value === "string" && key.endsWith("_date")) {
       next[key] = value.slice(0, 10);
+    } else if (key === "labels") {
+      next[key] = parseStoredLabels(value);
     } else if (typeof value === "bigint") {
       next[key] = Number(value);
     } else {
@@ -220,6 +238,11 @@ async function migrate(): Promise<void> {
     } catch {
       // column may already exist
     }
+    try {
+      await execStatements(addTaskLabelsSql);
+    } catch {
+      // column may already exist
+    }
     const count = await query<{ n: number | string }>("SELECT COUNT(*) AS n FROM boards");
     if (Number(count.rows[0]?.n ?? 0) === 0) {
       await execStatements(seedSql);
@@ -245,6 +268,11 @@ async function migrate(): Promise<void> {
   }
   try {
     getSqlite().exec(`ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'`);
+  } catch {
+    // column may already exist
+  }
+  try {
+    getSqlite().exec(`ALTER TABLE tasks ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'`);
   } catch {
     // column may already exist
   }

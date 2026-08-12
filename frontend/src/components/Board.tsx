@@ -12,10 +12,11 @@ import {
   type DropAnimation,
 } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
-import type { BoardPageData, CreateTaskRequest, Task, TaskPriority } from "@tmb/shared";
+import type { BoardPageData, CreateTaskRequest, Task, TaskLabel, TaskPriority } from "@tmb/shared";
 import { createBoard, createTask, deleteTask, getBoard, listBoards, updateTask } from "@/lib/api";
 import { readSelectedBoardId, readUser, saveSelectedBoardId } from "@/lib/auth";
 import { taskMatchesDateFilter, type DateFilterField } from "@/lib/dates";
+import { taskMatchesSearch } from "@/lib/labels";
 import { boardCollision, dropIndex, findTask, moveTask, parseTaskDragId } from "@/lib/dnd";
 import type { TaskSort } from "@/lib/priority";
 import { errorMessage } from "@/lib/parse";
@@ -45,6 +46,7 @@ export default function Board({ initial }: BoardProps) {
   const [dateTo, setDateTo] = useState("");
   const [dateField, setDateField] = useState<DateFilterField>("column");
   const [sort, setSort] = useState<TaskSort>("board");
+  const [search, setSearch] = useState("");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const boardRef = useRef(board);
   const dragOrigin = useRef<{ columnId: number; position: number } | null>(null);
@@ -124,6 +126,7 @@ export default function Board({ initial }: BoardProps) {
       startDate?: string | null;
       completedDate?: string | null;
       priority?: TaskPriority;
+      labels?: TaskLabel[];
     },
   ): Promise<void> {
     await updateTask(taskId, fields);
@@ -215,6 +218,28 @@ export default function Board({ initial }: BoardProps) {
           }}
           onCreate={handleCreateBoard}
         />
+        <label className="block text-sm">
+          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
+            Search
+          </span>
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search title, description, or label…"
+              className="w-full max-w-md rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-500"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </label>
         <div className="flex flex-wrap items-end gap-3">
           <DateRangeFilter
             from={dateFrom}
@@ -224,13 +249,16 @@ export default function Board({ initial }: BoardProps) {
               board?.columns.reduce(
                 (count, column) =>
                   count +
-                  column.tasks.filter((task) =>
-                    taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField),
+                  column.tasks.filter(
+                    (task) =>
+                      taskMatchesDateFilter(task, column.name, dateFrom, dateTo, dateField) &&
+                      taskMatchesSearch(task, search),
                   ).length,
                 0,
               ) ?? 0
             }
             totalCount={board?.columns.reduce((count, column) => count + column.tasks.length, 0) ?? 0}
+            filterActive={Boolean(dateFrom || dateTo || search.trim())}
             onFromChange={setDateFrom}
             onToChange={setDateTo}
             onFieldChange={setDateField}
@@ -284,6 +312,8 @@ export default function Board({ initial }: BoardProps) {
                 dateTo={dateTo}
                 dateField={dateField}
                 sort={sort}
+                search={search}
+                onLabelClick={(label) => setSearch(label)}
               />
             ))}
           </div>

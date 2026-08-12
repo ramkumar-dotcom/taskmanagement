@@ -8,6 +8,7 @@ interface DateRangeFilterProps {
   field: DateFilterField;
   matchCount: number;
   totalCount: number;
+  filterActive?: boolean;
   onFromChange: (value: string) => void;
   onToChange: (value: string) => void;
   onFieldChange: (value: DateFilterField) => void;
@@ -28,12 +29,14 @@ export default function DateRangeFilter({
   field,
   matchCount,
   totalCount,
+  filterActive,
   onFromChange,
   onToChange,
   onFieldChange,
   onClear,
 }: DateRangeFilterProps) {
-  const active = Boolean(from || to);
+  const dateActive = Boolean(from || to);
+  const active = filterActive ?? dateActive;
   const reversed = Boolean(from && to && from > to);
 
   return (
@@ -77,7 +80,7 @@ export default function DateRangeFilter({
           className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-teal-700 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
         />
       </label>
-      {active ? (
+      {dateActive ? (
         <button
           type="button"
           onClick={onClear}

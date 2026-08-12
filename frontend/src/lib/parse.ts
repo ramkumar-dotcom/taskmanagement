@@ -47,6 +47,15 @@ export function parseHealth(value: unknown): HealthResponse {
   throw new Error("API /health returned an unexpected shape");
 }
 
+const KNOWN_LABELS = new Set(["bug", "feature", "design", "docs", "chore"]);
+
+function parseLabels(value: unknown): Task["labels"] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is Task["labels"][number] => typeof item === "string" && KNOWN_LABELS.has(item),
+  );
+}
+
 function asOptionalDate(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") return null;
@@ -78,6 +87,7 @@ function parseTask(value: unknown): Task {
         value.priority === "low" || value.priority === "medium" || value.priority === "high"
           ? value.priority
           : "medium",
+      labels: parseLabels(value.labels),
     };
   }
   throw new Error("API returned a task with an unexpected shape");

@@ -3,12 +3,14 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, type FormEvent } from "react";
-import type { Task, TaskPriority } from "@tmb/shared";
+import type { Task, TaskLabel, TaskPriority } from "@tmb/shared";
 import { columnDateKind, columnDateLabel, isDoneColumnName } from "@/lib/columns";
 import { formatDate, isPastDate } from "@/lib/dates";
 import { taskDragId } from "@/lib/dnd";
+import { labelChipClass } from "@/lib/labels";
 import { priorityBadgeClass, priorityBarClass } from "@/lib/priority";
 import DateField from "./DateField";
+import LabelField from "./LabelField";
 import PriorityField from "./PriorityField";
 
 type TaskEditFields = {
@@ -18,6 +20,7 @@ type TaskEditFields = {
   startDate?: string | null;
   completedDate?: string | null;
   priority?: TaskPriority;
+  labels?: TaskLabel[];
 };
 
 interface TaskCardFaceProps {
@@ -25,6 +28,7 @@ interface TaskCardFaceProps {
   columnName?: string;
   onDelete?: (taskId: number) => Promise<void>;
   onEdit?: (taskId: number, fields: TaskEditFields) => Promise<void>;
+  onLabelClick?: (label: TaskLabel) => void;
   overlay?: boolean;
 }
 
@@ -33,6 +37,7 @@ export function TaskCardFace({
   columnName,
   onDelete,
   onEdit,
+  onLabelClick,
   overlay = false,
 }: TaskCardFaceProps) {
   const canEdit = Boolean(onEdit) && !isDoneColumnName(columnName ?? "");
@@ -45,6 +50,7 @@ export function TaskCardFace({
       "",
   );
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
+  const [labels, setLabels] = useState<TaskLabel[]>(task.labels);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,6 +62,7 @@ export function TaskCardFace({
         "",
     );
     setPriority(task.priority);
+    setLabels(task.labels);
     setError("");
   }
 
@@ -75,6 +82,7 @@ export function TaskCardFace({
       if (dateKind === "start") fields.startDate = date || null;
       if (dateKind === "completed") fields.completedDate = date || null;
       fields.priority = priority;
+      fields.labels = labels;
       await onEdit(task.id, fields);
       setEditing(false);
     } catch (err) {
@@ -107,6 +115,7 @@ export function TaskCardFace({
           />
           <DateField label={columnDateLabel(dateKind)} value={date} onChange={setDate} />
           <PriorityField value={priority} onChange={setPriority} />
+          <LabelField value={labels} onChange={setLabels} />
           {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
           <div className="flex gap-2">
             <button
@@ -170,11 +179,26 @@ export function TaskCardFace({
           ) : null}
         </div>
       </div>
-      <span
-        className={`mt-2 ml-1.5 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityBadgeClass(task.priority)}`}
-      >
-        {task.priority}
-      </span>
+      <div className="mt-2 ml-1.5 flex flex-wrap items-center gap-1">
+        <span
+          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityBadgeClass(task.priority)}`}
+        >
+          {task.priority}
+        </span>
+        {task.labels.map((label) => (
+          <button
+            key={label}
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => onLabelClick?.(label)}
+            className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${labelChipClass(label)} ${
+              onLabelClick ? "cursor-pointer" : "cursor-default"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {task.description ? (
         <p className="mt-1 pl-1.5 text-xs leading-5 text-stone-500 dark:text-stone-400">{task.description}</p>
       ) : null}
@@ -219,9 +243,10 @@ interface TaskCardProps {
   columnName: string;
   onDelete: (taskId: number) => Promise<void>;
   onEdit: (taskId: number, fields: TaskEditFields) => Promise<void>;
+  onLabelClick?: (label: TaskLabel) => void;
 }
 
-export default function TaskCard({ task, columnName, onDelete, onEdit }: TaskCardProps) {
+export default function TaskCard({ task, columnName, onDelete, onEdit, onLabelClick }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: taskDragId(task.id),
     data: { type: "task", task },
@@ -237,7 +262,13 @@ export default function TaskCard({ task, columnName, onDelete, onEdit }: TaskCar
       className={`touch-none ${isDragging ? "z-10 opacity-30" : ""}`}
     >
       <div className="cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
-        <TaskCardFace task={task} columnName={columnName} onDelete={onDelete} onEdit={onEdit} />
+        <TaskCardFace
+          task={task}
+          columnName={columnName}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          onLabelClick={onLabelClick}
+        />
       </div>
     </div>
   );
