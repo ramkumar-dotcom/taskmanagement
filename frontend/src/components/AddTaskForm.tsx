@@ -11,6 +11,7 @@ interface AddTaskFormProps {
 
 export default function AddTaskForm({ columnId, onCreated }: AddTaskFormProps) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,8 +22,13 @@ export default function AddTaskForm({ columnId, onCreated }: AddTaskFormProps) {
     setBusy(true);
     setError("");
     try {
-      await onCreated({ title: title.trim(), columnId });
+      await onCreated({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        columnId,
+      });
       setTitle("");
+      setDescription("");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -37,6 +43,13 @@ export default function AddTaskForm({ columnId, onCreated }: AddTaskFormProps) {
         onChange={(event) => setTitle(event.target.value)}
         placeholder="Add a task…"
         className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+      />
+      <textarea
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        rows={2}
+        placeholder="Description (optional)"
+        className="w-full resize-none rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs text-stone-700 outline-none placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
       />
       <button
         type="submit"
